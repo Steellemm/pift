@@ -1,16 +1,27 @@
 package com.griddynamics.uspanov.test;
 
+import java.math.BigDecimal;
+
 public class Entity {
     private String name;
+    private Long number;
+    private Integer age;
+    private BigDecimal count;
 
     public String getName() {
         return name;
     }
 
-    public Long getAge() {
+    public Integer getAge() {
         return age;
     }
 
-    private Long age;
+    public Long getNumber() {
+        return number;
+    }
+
+    public BigDecimal getCount() {
+        return count;
+    }
 }
 
