@@ -1,26 +1,54 @@
 package com.griddynamics.uspanov.test;
 
+import com.github.javafaker.Faker;
+import lombok.experimental.UtilityClass;
+import lombok.extern.slf4j.Slf4j;
+
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
+import java.math.BigDecimal;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.function.Function;
 
+@UtilityClass
+@Slf4j
 public class EntityUtils {
-    private EntityUtils() {
-    }
+    private final Faker faker = new Faker();
 
-    public static <T> T create(Class<T> type, Map<String, Function<Field, Object>> map){
-        T object = null;
+    private final Map<Class, Function<Field, Object>> map = Map.of(
+            Long.class, field -> faker.number().randomNumber(),
+            String.class, field -> faker.animal().name(),
+            Integer.class, field -> faker.number().numberBetween(Integer.MIN_VALUE, Integer.MAX_VALUE),
+            BigDecimal.class, field -> new BigDecimal(faker.number().randomNumber())
+    );
+
+    public static <T> T create(Class<T> type){
+        T object = createInstance(type);
         try {
-            object = type.getConstructor().newInstance();
-            for (Field field: type.getDeclaredFields()){
-                field.setAccessible(true);
-                field.set(object, map.get(field.getType().getName().split("\\.")[2]).apply(field));
-                field.setAccessible(false);
-            }
-        } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
-            e.printStackTrace();
+            Arrays.stream(type.getDeclaredFields()).forEach(field -> setField(object, field));
+        } catch (Exception e) {
+            log.error("", e);
         }
         return object;
+    }
+
+    private static <T> T createInstance(Class<T> type){
+        try {
+            return type.getConstructor().newInstance();
+        } catch (Exception e) {
+            throw new IllegalArgumentException("", e);
+        }
+    }
+
+    private void setField(Object obj, Field field){
+        boolean a = field.canAccess(obj);
+        try {
+            field.setAccessible(true);
+            field.set(obj, map.get(field.getType()).apply(field));
+        } catch (Exception e) {
+            throw new IllegalArgumentException("", e);
+        } finally {
+            field.setAccessible(a);
+        }
     }
 }
