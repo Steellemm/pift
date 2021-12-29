@@ -10,6 +10,7 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.function.Function;
 
+
 @UtilityClass
 @Slf4j
 public class EntityUtils {
@@ -27,7 +28,7 @@ public class EntityUtils {
         try {
             Arrays.stream(type.getDeclaredFields()).forEach(field -> setField(object, field));
         } catch (Exception e) {
-            log.error("", e);
+            log.error("Exception in create method", e);
         }
         return object;
     }
@@ -36,17 +37,17 @@ public class EntityUtils {
         try {
             return type.getConstructor().newInstance();
         } catch (Exception e) {
-            throw new IllegalArgumentException("", e);
+            throw new IllegalArgumentException("Exception in createInstance method", e);
         }
     }
 
-    private void setField(Object obj, Field field){
+    private static void setField(Object obj, Field field){
         boolean a = field.canAccess(obj);
         try {
             field.setAccessible(true);
             field.set(obj, map.get(field.getType()).apply(field));
         } catch (Exception e) {
-            throw new IllegalArgumentException("", e);
+            throw new IllegalArgumentException("Exception in setField method", e);
         } finally {
             field.setAccessible(a);
         }
