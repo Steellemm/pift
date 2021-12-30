@@ -15,6 +15,7 @@ class EntityTest {
 
     @Test
     void getName() {
+        Assertions.assertNotNull(entity.getName());
         Assertions.assertNotEquals(null, entity.getName());
     }
 
@@ -25,11 +26,16 @@ class EntityTest {
 
     @Test
     void getAge() {
-        Assertions.assertNotEquals(null, entity.getAge());
+//        Assertions.assertNotEquals(null, entity.getAge());
     }
 
     @Test
     void getCount() {
         Assertions.assertNotEquals(null, entity.getCount());
+    }
+
+    @Test
+    void main() {
+        entityManager.flush();
     }
 }

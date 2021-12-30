@@ -11,14 +11,14 @@ import java.math.BigDecimal;
 @Setter
 @Getter
 @javax.persistence.Entity
-@Table(name = "entity_test")
+@Table(name = "Entity_test")
 public class Entity {
-    @Column
+
     private String name;
     @Column
     private Long number;
-    @Column
-    private Integer age;
+//    @Column
+//    private Integer age;
     @Column
     private BigDecimal count;
 
