@@ -5,6 +5,7 @@ import lombok.Setter;
 
 import javax.persistence.Column;
 import javax.persistence.Table;
+import javax.persistence.Transient;
 import java.math.BigDecimal;
 
 
@@ -17,8 +18,9 @@ public class Entity {
     private String name;
     @Column
     private Long number;
-//    @Column
-//    private Integer age;
+    @Column
+    @Transient
+    private Integer age;
     @Column
     private BigDecimal count;
 

@@ -3,6 +3,7 @@ package com.griddynamics.uspanov.test;
 import org.sql2o.Connection;
 import org.sql2o.Sql2o;
 
+import javax.persistence.Column;
 import javax.persistence.Table;
 import javax.persistence.Transient;
 import java.lang.reflect.Field;
@@ -35,10 +36,13 @@ public class EntityManager {
 
         StringBuilder insertQuery = new StringBuilder("insert into " + tableName + " (" + Arrays
                 .stream(type.getDeclaredFields())
+                .filter(x -> x.isAnnotationPresent(Column.class))
+                .filter(x -> !x.isAnnotationPresent(Transient.class))
                 .map(Field::getName)
                 .collect(Collectors.joining(",")) + ") values (");
 
         Arrays.stream(type.getDeclaredFields())
+                .filter(x -> x.isAnnotationPresent(Column.class))
                 .filter(x -> !x.isAnnotationPresent(Transient.class))
                 .forEach(x -> insertQuery.append(":").append(x.getName()).append(", "));
 
