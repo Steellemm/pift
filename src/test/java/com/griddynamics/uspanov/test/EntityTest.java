@@ -1,5 +1,6 @@
 package com.griddynamics.uspanov.test;
 
+import com.griddynamics.uspanov.test.Entities.Entity;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -32,6 +33,11 @@ class EntityTest {
     @Test
     void getCount() {
         Assertions.assertNotEquals(null, entity.getCount());
+    }
+
+    @Test
+    void test(){
+        System.out.println(entity.getAddress());
     }
 
     @Test
