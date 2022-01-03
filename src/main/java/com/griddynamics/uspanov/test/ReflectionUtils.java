@@ -23,12 +23,4 @@ public class ReflectionUtils {
             return  type.getAnnotation(Table.class).name();
         } else return type.getSimpleName();
     }
-
-//    public static Object readField(Field field, Object target) {
-//        try {
-//            return FieldUtils.readField(field, target, true);
-//        } catch (Exception e) {
-//            throw new IllegalArgumentException(e);
-//        }
-//    }
 }
