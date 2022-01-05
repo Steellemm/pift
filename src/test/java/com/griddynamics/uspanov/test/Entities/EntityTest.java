@@ -1,6 +1,7 @@
-package com.griddynamics.uspanov.test;
+package com.griddynamics.uspanov.test.Entities;
 
 import com.griddynamics.uspanov.test.Entities.Entity;
+import com.griddynamics.uspanov.test.EntityManager;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -17,7 +18,6 @@ class EntityTest {
     @Test
     void getName() {
         Assertions.assertNotNull(entity.getName());
-        Assertions.assertNotEquals(null, entity.getName());
     }
 
     @Test
