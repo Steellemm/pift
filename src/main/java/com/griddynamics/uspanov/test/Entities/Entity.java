@@ -10,7 +10,7 @@ import java.math.BigDecimal;
 @Setter
 @Getter
 @javax.persistence.Entity
-@Table(name = "Entity_test")
+@Table(name = "entity")
 public class Entity extends SuperEntity{
 
     @Id
@@ -32,6 +32,8 @@ public class Entity extends SuperEntity{
     @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "dept_id", referencedColumnName = "id")
     private Department department;
+
+    private Long dept_id;
 
 }
 

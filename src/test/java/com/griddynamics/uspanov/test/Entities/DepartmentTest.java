@@ -5,8 +5,6 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 class DepartmentTest {
     Department department;
     EntityManager entityManager = new EntityManager();
@@ -27,7 +25,7 @@ class DepartmentTest {
     }
 
     @Test
-    void getEntity() {
-        Assertions.assertNotNull(department.getEntity());
+    void main(){
+        entityManager.flush();
     }
 }

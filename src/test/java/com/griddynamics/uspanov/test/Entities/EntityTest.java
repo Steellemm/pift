@@ -1,9 +1,9 @@
 package com.griddynamics.uspanov.test.Entities;
 
-import com.griddynamics.uspanov.test.Entities.Entity;
 import com.griddynamics.uspanov.test.EntityManager;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 class EntityTest {
@@ -12,6 +12,7 @@ class EntityTest {
 
     @BeforeEach
     void before(){
+        entityManager.create(Department.class);
         entity = entityManager.create(Entity.class);
     }
 
@@ -22,22 +23,22 @@ class EntityTest {
 
     @Test
     void getNumber() {
-        Assertions.assertNotEquals(null, entity.getNumber());
+        Assertions.assertNotNull(entity.getNumber());
     }
 
     @Test
+    @Disabled
     void getAge() {
-//        Assertions.assertNotEquals(null, entity.getAge());
+        Assertions.assertNotNull(entity.getAge());
     }
 
     @Test
     void getCount() {
-        Assertions.assertNotEquals(null, entity.getCount());
+        Assertions.assertNotNull(entity.getCount());
     }
 
     @Test
     void test(){
-        System.out.println(entity.getAddress());
     }
 
     @Test

@@ -3,18 +3,14 @@ package com.griddynamics.uspanov.test;
 import com.github.javafaker.Faker;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
-import org.sql2o.Connection;
-import org.sql2o.Sql2o;
 
 import javax.persistence.Id;
-import javax.persistence.OneToOne;
-import javax.persistence.Transient;
+import javax.persistence.JoinColumn;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static com.griddynamics.uspanov.test.ReflectionUtils.*;
 
@@ -24,7 +20,7 @@ import static com.griddynamics.uspanov.test.ReflectionUtils.*;
 public class EntityUtils {
     private final Faker faker = new Faker();
 
-    private final Map<Class<?>, Function<Field, Object>> map = Map.of(
+    private final Map<Class<?>, Function<Field, Object>> fieldsMapping = Map.of(
             Long.class, field -> faker.number().randomNumber(),
             String.class, field -> faker.animal().name(),
             Integer.class, field -> faker.number().numberBetween(Integer.MIN_VALUE, Integer.MAX_VALUE),
@@ -41,19 +37,19 @@ public class EntityUtils {
         return insertQuery.toString();
     }
 
-    public static <T> List<T> create(Class<T> type) {
+    public static <T> T create(Class<T> type, List<Object> createdEntitiesList) {
         T object = createInstance(type);
-        List<T> list = new ArrayList<>(List.of(object));
+        createdEntitiesList.add(object);
         try {
-            setFields(type.getDeclaredFields(), object, list);
-            setFields(type.getSuperclass().getDeclaredFields(), object, list);
+            setFields(type.getDeclaredFields(), object, createdEntitiesList);
+            setSuperClassFields(type, object, createdEntitiesList);
         } catch (Exception e) {
             throw new IllegalArgumentException("Exception in create method", e);
         }
-        return list;
+        return object;
     }
 
-    public static void setField(Object obj, Field field, Long id) {
+    public static void setFieldRandom(Object obj, Field field, Object id) {
         boolean accessStatus = field.canAccess(obj);
         try {
             field.setAccessible(true);
@@ -65,6 +61,13 @@ public class EntityUtils {
         }
     }
 
+    private static void setSuperClassFields(Class<?> type, Object object, List<Object> list) {
+        while (!type.getSuperclass().getSimpleName().equals("Object")) {
+            setFields(type.getSuperclass().getDeclaredFields(), object, list);
+            type = type.getSuperclass();
+        }
+    }
+
     private static <T> T createInstance(Class<T> type) {
         try {
             return type.getConstructor().newInstance();
@@ -73,30 +76,42 @@ public class EntityUtils {
         }
     }
 
-    private static <T> void setFields(Field[] fields, Object object, List<T> list){
-        Arrays.stream(fields).filter(x -> !x.isAnnotationPresent(Id.class))
-                .forEach(field -> list.addAll((List<? extends T>) setField(object, field)));
+    private static void setFields(Field[] fields, Object object, List<Object> list) {
+        Arrays.stream(fields).filter(field -> checkIfFieldFilled(field, object))
+                .forEach(field -> setFieldRandom(object, field, list, fields));
     }
 
-    private static List<?> setField(Object obj, Field field) {
+    private static void setFieldRandom(Object obj, Field field, List<Object> createdEntitiesList, Field[] fields) {
         boolean accessStatus = field.canAccess(obj);
         try {
             field.setAccessible(true);
-            if (map.containsKey(field.getType())) {
-                field.set(obj, map.get(field.getType()).apply(field));
+            if (fieldsMapping.containsKey(field.getType())) {
+                field.set(obj, fieldsMapping.get(field.getType()).apply(field));
+            } else {
+                field.set(obj, createdEntitiesList.stream()
+                        .filter(x -> x.getClass().isAssignableFrom(field.getType()))
+                        .findFirst()
+                        .orElseThrow(() -> new IllegalCallerException(
+                                "Trying to set object that has not been created yet")));
+
+                setForeignKey(fields, field, obj);
             }
-            // NEEDS TO ADD CONDITION FOR HANDLING RELATIONS BETWEEN ENTITIES
-            // causes infinite recursion
-            else {
-                List<?> list = create(field.getType());
-                field.set(obj, list.get(0));
-                return list;
-            }
-            return Collections.emptyList();
         } catch (Exception e) {
             throw new IllegalArgumentException("Exception in setField method", e);
         } finally {
             field.setAccessible(accessStatus);
         }
+    }
+
+    private void setForeignKey(Field[] fields, Field field, Object obj) throws IllegalAccessException {
+        Field foreignKey = Arrays.stream(fields).filter(field1 ->
+                        field1.getName().equals(field.getAnnotation(JoinColumn.class).name()))
+                .findFirst()
+                .get();
+
+        setFieldRandom(obj, foreignKey, getFieldValue(Arrays
+                .stream(field.get(obj).getClass().getDeclaredFields())
+                .filter(field1 -> field1.isAnnotationPresent(Id.class))
+                .findFirst().get(), field.get(obj)));
     }
 }
