@@ -32,8 +32,31 @@ public class ReflectionUtils {
         return Arrays.stream(type.getDeclaredFields())
                 .filter(x ->
                         !x.isAnnotationPresent(Transient.class) &&
-                                !x.isAnnotationPresent(Id.class) &&
                                 !x.isAnnotationPresent(OneToOne.class))
                 .map(ReflectionUtils::getColumnName);
+    }
+
+    public static boolean checkIfFieldFilled(Field field, Object object) {
+        boolean accessStatus = field.canAccess(object);
+        field.setAccessible(true);
+        try {
+            return field.get(object) == null;
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Exception in checkIfFieldFilled method", e);
+        } finally {
+            field.setAccessible(accessStatus);
+        }
+    }
+
+    public static Object getFieldValue(Field field, Object object){
+        boolean accessStatus = field.canAccess(object);
+        try {
+            field.setAccessible(true);
+            return field.get(object);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Exception in setField method", e);
+        } finally {
+            field.setAccessible(accessStatus);
+        }
     }
 }

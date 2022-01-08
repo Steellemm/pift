@@ -17,7 +17,7 @@ import static com.griddynamics.uspanov.test.ReflectionUtils.getTableName;
 public class EntityManager {
     private final List<Object> createdEntitiesList = new ArrayList<>();
     private static final Sql2o dataSource = new Sql2o
-            ("jdbc:postgresql://localhost:5432/test_db", "postgres", "postgres");
+            ("jdbc:postgresql://localhost:5432/postgres", "postgres", "postgres");
 
     public void flush() {
         createdEntitiesList.forEach(this::saveEntity);
@@ -25,9 +25,7 @@ public class EntityManager {
     }
 
     public <T> T create(Class<T> type) {
-        List<T> objectsList = EntityUtils.create(type);
-        createdEntitiesList.addAll(objectsList);
-        return objectsList.get(0);
+        return EntityUtils.create(type, createdEntitiesList);
     }
 
     private void saveEntity(Object entity) {
@@ -36,16 +34,9 @@ public class EntityManager {
         String insertQuery = createInsertQuery(tableName, type);
 
         try (Connection con = dataSource.open()) {
-            log.info(insertQuery);
+            log.debug(insertQuery);
             con.setRollbackOnException(false);
-
-            Long id = con.createQuery(insertQuery, true)
-                    .bind(entity)
-                    .executeUpdate().getKey(Long.class);
-
-            Arrays.stream(entity.getClass().getDeclaredFields())
-                    .filter(x -> x.isAnnotationPresent(Id.class))
-                    .findFirst().ifPresent(field -> setField(entity, field, id));
+            con.createQuery(insertQuery).bind(entity).executeUpdate();
         }
     }
 

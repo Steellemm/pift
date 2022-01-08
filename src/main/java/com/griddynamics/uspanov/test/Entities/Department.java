@@ -17,6 +17,4 @@ public class Department {
     @Column(name = "location")
     private String location;
 
-    @OneToOne(mappedBy = "department")
-    private Entity entity;
 }
