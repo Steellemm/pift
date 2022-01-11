@@ -10,7 +10,6 @@ import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.util.*;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import static com.griddynamics.uspanov.test.ReflectionUtils.*;
 
@@ -27,79 +26,38 @@ public class EntityUtils {
             BigDecimal.class, field -> new BigDecimal(faker.number().randomNumber())
     );
 
-    public String createInsertQuery(String tableName, Class<?> type) {
-        StringBuilder insertQuery = new StringBuilder("insert into " + tableName + " (" +
-                getColumnNameStream(type).collect(Collectors.joining(",")) + ") values (");
-
-        getColumnNameStream(type).forEach(x -> insertQuery.append(":").append(x).append(", "));
-        insertQuery.setCharAt(insertQuery.lastIndexOf(","), ')');
-
-        return insertQuery.toString();
-    }
-
     public static <T> T create(Class<T> type, List<Object> createdEntitiesList) {
         T object = createInstance(type);
         createdEntitiesList.add(object);
         try {
-            setFields(type.getDeclaredFields(), object, createdEntitiesList);
-            setSuperClassFields(type, object, createdEntitiesList);
+            setFields(type, object, createdEntitiesList);
         } catch (Exception e) {
             throw new IllegalArgumentException("Exception in create method", e);
         }
         return object;
     }
 
-    public static void setFieldRandom(Object obj, Field field, Object id) {
-        boolean accessStatus = field.canAccess(obj);
-        try {
-            field.setAccessible(true);
-            field.set(obj, id);
-        } catch (Exception e) {
-            throw new IllegalArgumentException("Exception in setField method", e);
-        } finally {
-            field.setAccessible(accessStatus);
-        }
-    }
-
-    private static void setSuperClassFields(Class<?> type, Object object, List<Object> list) {
-        while (!type.getSuperclass().getSimpleName().equals("Object")) {
-            setFields(type.getSuperclass().getDeclaredFields(), object, list);
+    private static void setFields(Class<?> type, Object object, List<Object> list) {
+        do {
+            Arrays.stream(type.getDeclaredFields()).filter(field -> checkIfFieldFilled(field, object))
+                    .forEach(field -> setFieldRandom(object, field, list));
             type = type.getSuperclass();
-        }
+        } while (type != Object.class);
     }
 
-    private static <T> T createInstance(Class<T> type) {
+    private static void setFieldRandom(Object obj, Field field, List<Object> createdEntitiesList) {
         try {
-            return type.getConstructor().newInstance();
-        } catch (Exception e) {
-            throw new IllegalArgumentException("Exception in createInstance method", e);
-        }
-    }
-
-    private static void setFields(Field[] fields, Object object, List<Object> list) {
-        Arrays.stream(fields).filter(field -> checkIfFieldFilled(field, object))
-                .forEach(field -> setFieldRandom(object, field, list, fields));
-    }
-
-    private static void setFieldRandom(Object obj, Field field, List<Object> createdEntitiesList, Field[] fields) {
-        boolean accessStatus = field.canAccess(obj);
-        try {
-            field.setAccessible(true);
             if (fieldsMapping.containsKey(field.getType())) {
-                field.set(obj, fieldsMapping.get(field.getType()).apply(field));
+                setFieldValue(obj, field, fieldsMapping.get(field.getType()).apply(field));
             } else {
-                field.set(obj, createdEntitiesList.stream()
+                setFieldValue(obj, field, createdEntitiesList.stream()
                         .filter(x -> x.getClass().isAssignableFrom(field.getType()))
                         .findFirst()
                         .orElseThrow(() -> new IllegalCallerException(
                                 "Trying to set object that has not been created yet")));
-
-                setForeignKey(fields, field, obj);
             }
         } catch (Exception e) {
             throw new IllegalArgumentException("Exception in setField method", e);
-        } finally {
-            field.setAccessible(accessStatus);
         }
     }
 
@@ -109,7 +67,7 @@ public class EntityUtils {
                 .findFirst()
                 .get();
 
-        setFieldRandom(obj, foreignKey, getFieldValue(Arrays
+        setFieldValue(obj, foreignKey, getFieldValue(Arrays
                 .stream(field.get(obj).getClass().getDeclaredFields())
                 .filter(field1 -> field1.isAnnotationPresent(Id.class))
                 .findFirst().get(), field.get(obj)));
