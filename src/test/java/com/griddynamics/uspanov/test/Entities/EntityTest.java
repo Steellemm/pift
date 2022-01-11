@@ -1,5 +1,7 @@
 package com.griddynamics.uspanov.test.Entities;
 
+import com.griddynamics.uspanov.test.Entities.Entities.Department;
+import com.griddynamics.uspanov.test.Entities.Entities.Entity;
 import com.griddynamics.uspanov.test.EntityManager;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -8,7 +10,8 @@ import org.junit.jupiter.api.Test;
 
 class EntityTest {
     Entity entity;
-    EntityManager entityManager = new EntityManager();
+    EntityManager entityManager = new EntityManager
+            ("jdbc:postgresql://localhost:5432/postgres", "postgres", "postgres");
 
     @BeforeEach
     void before(){

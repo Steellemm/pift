@@ -1,4 +1,4 @@
-package com.griddynamics.uspanov.test.Entities;
+package com.griddynamics.uspanov.test.Entities.Entities;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -32,8 +32,6 @@ public class Entity extends SuperEntity{
     @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "dept_id", referencedColumnName = "id")
     private Department department;
-
-    private Long dept_id;
 
 }
 
