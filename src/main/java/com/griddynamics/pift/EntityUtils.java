@@ -1,4 +1,4 @@
-package com.griddynamics.uspanov.test;
+package com.griddynamics.pift;
 
 import com.github.javafaker.Faker;
 import lombok.experimental.UtilityClass;
@@ -11,7 +11,7 @@ import java.math.BigDecimal;
 import java.util.*;
 import java.util.function.Function;
 
-import static com.griddynamics.uspanov.test.ReflectionUtils.*;
+import static com.griddynamics.pift.ReflectionUtils.*;
 
 
 @UtilityClass
@@ -59,17 +59,5 @@ public class EntityUtils {
         } catch (Exception e) {
             throw new IllegalArgumentException("Exception in setField method", e);
         }
-    }
-
-    private void setForeignKey(Field[] fields, Field field, Object obj) throws IllegalAccessException {
-        Field foreignKey = Arrays.stream(fields).filter(field1 ->
-                        field1.getName().equals(field.getAnnotation(JoinColumn.class).name()))
-                .findFirst()
-                .get();
-
-        setFieldValue(obj, foreignKey, getFieldValue(Arrays
-                .stream(field.get(obj).getClass().getDeclaredFields())
-                .filter(field1 -> field1.isAnnotationPresent(Id.class))
-                .findFirst().get(), field.get(obj)));
     }
 }
