@@ -18,18 +18,10 @@ dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter-engine:5.8.2'
     testImplementation 'org.junit.jupiter:junit-jupiter-params:5.8.2'
     testImplementation 'org.junit.platform:junit-platform-suite:1.8.2'
-    testImplementation 'ch.qos.logback:logback-classic:1.2.3'
+    testImplementation 'ch.qos.logback:logback-classic:1.2.10'
     implementation 'org.slf4j:slf4j-api:1.7.32'
-    implementation 'org.sql2o:sql2o:1.5.4'
     implementation 'org.postgresql:postgresql:42.3.1'
-    implementation 'org.hibernate.javax.persistence:hibernate-jpa-2.1-api:1.0.2.Final'
-    implementation 'org.springframework:spring-jdbc:5.3.14'
-
-
-
-
-
-
+    implementation 'javax.persistence:javax.persistence-api:2.2'
 }
 
 test {

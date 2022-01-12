@@ -1,25 +1,19 @@
-package com.griddynamics.uspanov.test;
+package com.griddynamics.pift;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.griddynamics.uspanov.test.SQLUtils.connect;
-
 
 @Slf4j
+@RequiredArgsConstructor
 public class EntityManager {
     private final List<Object> createdEntitiesList = new ArrayList<>();
     private final String URL;
     private final String USER;
     private final String PASSWORD;
-
-    public EntityManager(String url, String user, String password) {
-        URL = url;
-        USER = user;
-        PASSWORD = password;
-    }
 
     public void flush() {
         createdEntitiesList.forEach(this::saveEntity);
@@ -31,7 +25,7 @@ public class EntityManager {
     }
 
     private void saveEntity(Object entity) {
-        connect(URL, USER, PASSWORD, entity);
+        SQLUtils.connect(URL, USER, PASSWORD, entity);
     }
 
 }

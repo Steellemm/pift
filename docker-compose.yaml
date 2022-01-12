@@ -1,8 +1,5 @@
 version: '3.9'
 
-volumes:
-  test-service:
-
 services:
 
   db-service:
@@ -16,4 +13,4 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - test-service:/var/lib/postgresql/data
+      -  ./volume/test:/var/lib/postgresql/data

@@ -1,4 +1,4 @@
-package com.griddynamics.uspanov.test;
+package com.griddynamics.pift;
 
 
 import lombok.experimental.UtilityClass;
@@ -27,8 +27,7 @@ public class ReflectionUtils {
     public static Stream<Field> getColumnFields(Object entity) {
         return Arrays.stream(entity.getClass().getDeclaredFields())
                 .filter(field -> !field.isAnnotationPresent(Transient.class))
-                .filter(field -> !field.isAnnotationPresent(Version.class))
-                .filter(field -> getFieldValue(field, entity) != null);
+                .filter(field -> !field.isAnnotationPresent(Version.class));
     }
 
     public static boolean checkIfFieldFilled(Field field, Object object) {

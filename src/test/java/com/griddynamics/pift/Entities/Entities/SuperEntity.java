@@ -1,4 +1,4 @@
-package com.griddynamics.uspanov.test.Entities.Entities;
+package com.griddynamics.pift.Entities.Entities;
 
 import lombok.Getter;
 import lombok.Setter;
