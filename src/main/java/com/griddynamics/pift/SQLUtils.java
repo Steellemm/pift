@@ -11,8 +11,6 @@ import java.sql.DriverManager;
 import java.sql.Statement;
 import java.util.Arrays;
 
-import static com.griddynamics.pift.ReflectionUtils.*;
-
 @Slf4j
 public class SQLUtils {
     public static void connect(String url, String user, String password, Object entity) {
@@ -30,26 +28,27 @@ public class SQLUtils {
         Class<?> type = entity.getClass();
         StringBuilder insertQuery =
                 new StringBuilder("INSERT INTO ")
-                        .append(getTableName(type)).append(" (");
+                        .append(ReflectionUtils.getTableName(type)).append(" (");
         StringBuilder values = new StringBuilder();
 
-        getColumnFields(entity).forEach(field -> {
+        ReflectionUtils.getColumnFields(entity).forEach(field -> {
             if (values.length() > 0) {
                 values.append(",").append(" ");
                 insertQuery.append(",").append(" ");
             }
             if (field.isAnnotationPresent(JoinColumn.class)) {
                 values.append(
-                        readField(getIdField(entity, field), getFieldValue(field, entity))
+                        ReflectionUtils.readField
+                                (getIdField(entity, field), ReflectionUtils.getFieldValue(field, entity))
                 );
-            } else values.append(readField(field, entity));
+            } else values.append(ReflectionUtils.readField(field, entity));
             insertQuery.append(getColumnName(field));
         });
         return insertQuery.append(") values (").append(values).append(")").toString();
     }
 
     private static Field getIdField(Object entity, Field field) {
-        return Arrays.stream(getFieldValue(field, entity).getClass()
+        return Arrays.stream(ReflectionUtils.getFieldValue(field, entity).getClass()
                         .getDeclaredFields()).filter(x -> x.isAnnotationPresent(Id.class))
                 .findFirst().orElseThrow(() -> new IllegalArgumentException("Exception in getIdField method"));
     }

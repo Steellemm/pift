@@ -6,15 +6,15 @@ import org.apache.commons.lang3.reflect.FieldUtils;
 
 import javax.persistence.*;
 import java.lang.reflect.Field;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @UtilityClass
 public class ReflectionUtils {
+
+    public static boolean checkIfFieldFilled(Field field, Object object) {
+        return getFieldValue(field, object) == null;
+    }
 
     public static String getTableName(Class<?> type) {
         if (type.isAnnotationPresent(Table.class) &&
@@ -28,18 +28,6 @@ public class ReflectionUtils {
         return Arrays.stream(entity.getClass().getDeclaredFields())
                 .filter(field -> !field.isAnnotationPresent(Transient.class))
                 .filter(field -> !field.isAnnotationPresent(Version.class));
-    }
-
-    public static boolean checkIfFieldFilled(Field field, Object object) {
-        boolean accessStatus = field.canAccess(object);
-        field.setAccessible(true);
-        try {
-            return field.get(object) == null;
-        } catch (Exception e) {
-            throw new IllegalArgumentException("Exception in checkIfFieldFilled method", e);
-        } finally {
-            field.setAccessible(accessStatus);
-        }
     }
 
     public static Object getFieldValue(Field field, Object object){
@@ -67,15 +55,20 @@ public class ReflectionUtils {
     }
 
     public static void setFieldValue(Object obj, Field field, Object value) {
-        boolean accessStatus = field.canAccess(obj);
+        boolean accessStatus = setAccess(field, obj);
         try {
-            field.setAccessible(true);
             field.set(obj, value);
         } catch (Exception e) {
             throw new IllegalArgumentException("Exception in setField method", e);
         } finally {
             field.setAccessible(accessStatus);
         }
+    }
+
+    private static boolean setAccess(Field field, Object obj){
+        boolean accessStatus = field.canAccess(obj);
+        field.setAccessible(true);
+        return accessStatus;
     }
 
     public static <T> T createInstance(Class<T> type) {
