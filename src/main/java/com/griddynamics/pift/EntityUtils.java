@@ -4,14 +4,11 @@ import com.github.javafaker.Faker;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
-import javax.persistence.Id;
-import javax.persistence.JoinColumn;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.util.*;
 import java.util.function.Function;
 
-import static com.griddynamics.pift.ReflectionUtils.*;
 
 
 @UtilityClass
@@ -27,7 +24,7 @@ public class EntityUtils {
     );
 
     public static <T> T create(Class<T> type, List<Object> createdEntitiesList) {
-        T object = createInstance(type);
+        T object = ReflectionUtils.createInstance(type);
         createdEntitiesList.add(object);
         try {
             setFields(type, object, createdEntitiesList);
@@ -39,7 +36,7 @@ public class EntityUtils {
 
     private static void setFields(Class<?> type, Object object, List<Object> list) {
         do {
-            Arrays.stream(type.getDeclaredFields()).filter(field -> checkIfFieldFilled(field, object))
+            Arrays.stream(type.getDeclaredFields()).filter(field -> ReflectionUtils.checkIfFieldFilled(field, object))
                     .forEach(field -> setFieldRandom(object, field, list));
             type = type.getSuperclass();
         } while (type != Object.class);
@@ -48,9 +45,9 @@ public class EntityUtils {
     private static void setFieldRandom(Object obj, Field field, List<Object> createdEntitiesList) {
         try {
             if (fieldsMapping.containsKey(field.getType())) {
-                setFieldValue(obj, field, fieldsMapping.get(field.getType()).apply(field));
+                ReflectionUtils.setFieldValue(obj, field, fieldsMapping.get(field.getType()).apply(field));
             } else {
-                setFieldValue(obj, field, createdEntitiesList.stream()
+                ReflectionUtils.setFieldValue(obj, field, createdEntitiesList.stream()
                         .filter(x -> x.getClass().isAssignableFrom(field.getType()))
                         .findFirst()
                         .orElseThrow(() -> new IllegalCallerException(
