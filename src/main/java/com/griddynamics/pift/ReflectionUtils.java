@@ -42,18 +42,6 @@ public class ReflectionUtils {
         }
     }
 
-    public String readField(Field field, Object target) {
-        try {
-            Object o = FieldUtils.readField(field, target, true);
-            if (o instanceof String) {
-                return "'" + o + "'";
-            }
-            return o.toString();
-        } catch (IllegalAccessException e) {
-            throw new IllegalArgumentException(e);
-        }
-    }
-
     public static void setFieldValue(Object obj, Field field, Object value) {
         boolean accessStatus = setAccess(field, obj);
         try {
