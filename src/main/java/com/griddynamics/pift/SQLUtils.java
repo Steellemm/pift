@@ -1,30 +1,30 @@
 package com.griddynamics.pift;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.reflect.FieldUtils;
 
 import javax.persistence.Column;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import java.lang.reflect.Field;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.Statement;
 import java.util.Arrays;
 
 @Slf4j
 public class SQLUtils {
-    public static void connect(String url, String user, String password, Object entity) {
-        String insertQuery = createQueryForInsert(entity);
-        log.debug(insertQuery);
-        try (Connection con = DriverManager.getConnection(url, user, password);
-             Statement stmt = con.createStatement()) {
-            stmt.executeUpdate(insertQuery);
-        } catch (Exception e) {
-            throw new IllegalArgumentException("Exception in connect method", e);
+
+    public static String readField(Field field, Object target) {
+        try {
+            Object o = FieldUtils.readField(field, target, true);
+            if (o instanceof String) {
+                return "'" + o + "'";
+            }
+            return o.toString();
+        } catch (IllegalAccessException e) {
+            throw new IllegalArgumentException(e);
         }
     }
 
-    private static String createQueryForInsert(Object entity) {
+    public static String createQueryForInsert(Object entity) {
         Class<?> type = entity.getClass();
         StringBuilder insertQuery =
                 new StringBuilder("INSERT INTO ")
@@ -38,10 +38,10 @@ public class SQLUtils {
             }
             if (field.isAnnotationPresent(JoinColumn.class)) {
                 values.append(
-                        ReflectionUtils.readField
+                        readField
                                 (getIdField(entity, field), ReflectionUtils.getFieldValue(field, entity))
                 );
-            } else values.append(ReflectionUtils.readField(field, entity));
+            } else values.append(readField(field, entity));
             insertQuery.append(getColumnName(field));
         });
         return insertQuery.append(") values (").append(values).append(")").toString();
