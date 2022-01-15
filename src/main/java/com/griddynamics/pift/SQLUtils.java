@@ -12,6 +12,12 @@ import java.util.Arrays;
 @Slf4j
 public class SQLUtils {
 
+    /***
+     * Returns the field value valid for the request.
+     * @param field to be read.
+     * @param target object to be read from.
+     * @return String value of field.
+     */
     public static String readField(Field field, Object target) {
         try {
             Object o = FieldUtils.readField(field, target, true);
@@ -24,6 +30,11 @@ public class SQLUtils {
         }
     }
 
+    /***
+     * Creates query for insert data into database.
+     * @param entity object.
+     * @return String query
+     */
     public static String createQueryForInsert(Object entity) {
         Class<?> type = entity.getClass();
         StringBuilder insertQuery =
@@ -38,8 +49,7 @@ public class SQLUtils {
             }
             if (field.isAnnotationPresent(JoinColumn.class)) {
                 values.append(
-                        readField
-                                (getIdField(entity, field), ReflectionUtils.getFieldValue(field, entity))
+                        readField(getIdField(entity, field), ReflectionUtils.getFieldValue(field, entity))
                 );
             } else values.append(readField(field, entity));
             insertQuery.append(getColumnName(field));
@@ -47,12 +57,23 @@ public class SQLUtils {
         return insertQuery.append(") values (").append(values).append(")").toString();
     }
 
+    /***
+     * Gets id field from object reference field.
+     * @param entity object.
+     * @param field that references another object.
+     * @return id field
+     */
     private static Field getIdField(Object entity, Field field) {
         return Arrays.stream(ReflectionUtils.getFieldValue(field, entity).getClass()
                         .getDeclaredFields()).filter(x -> x.isAnnotationPresent(Id.class))
                 .findFirst().orElseThrow(() -> new IllegalArgumentException("Exception in getIdField method"));
     }
 
+    /***
+     * Gets the table column name that matches the received field.
+     * @param field to be matched.
+     * @return String name of column.
+     */
     private static String getColumnName(Field field) {
         if (field.isAnnotationPresent(JoinColumn.class)) {
             return field.getAnnotation(JoinColumn.class).name();
