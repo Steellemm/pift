@@ -19,6 +19,10 @@ public class EntityManager {
     private final String USER;
     private final String PASSWORD;
 
+    /***
+     * Pushes the objects from createdEntitiesList into database and then clears the list.
+     * @return int number of affected rows in database.
+     */
     public int flush() {
         AtomicInteger rowsAffectedCount = new AtomicInteger(0);
         createdEntitiesList.forEach(x -> rowsAffectedCount.addAndGet(saveEntity(x)));
@@ -27,20 +31,34 @@ public class EntityManager {
         return rowsAffectedCount.get();
     }
 
+    /***
+     * Creates new instance of type class with random values in fields.
+     * @param type of the entity class.
+     * @return new instance of type class.
+     */
     public <T> T create(Class<T> type) {
         return EntityUtils.create(type, createdEntitiesList);
     }
 
+    /***
+     * Saves received object to the database.
+     * @param entity object
+     * @return int number of affected rows in database.
+     */
     private int saveEntity(Object entity) {
-        return executeInsertQuery(entity);
+        return executeQuery(SQLUtils.createQueryForInsert(entity));
     }
 
-    private int executeInsertQuery(Object entity){
-            String insertQuery = SQLUtils.createQueryForInsert(entity);
-            log.debug(insertQuery);
+    /***
+     * Executes a query to the database.
+     * @param query
+     * @return int number of affected rows in database.
+     */
+    private int executeQuery(String query){
+            log.debug(query);
             try (Connection con = DriverManager.getConnection(URL, USER, PASSWORD);
                  Statement stmt = con.createStatement()) {
-                return stmt.executeUpdate(insertQuery);
+                return stmt.executeUpdate(query);
             } catch (Exception e) {
                 throw new IllegalArgumentException("Exception in connect method", e);
             }
