@@ -5,6 +5,7 @@ import lombok.Setter;
 
 import javax.persistence.*;
 import java.math.BigDecimal;
+import java.sql.Date;
 
 
 @Setter
@@ -25,6 +26,9 @@ public class Entity extends SuperEntity{
     @Column
     @Transient
     private Integer age;
+
+    @Column
+    private Date date;
 
     @Column
     private BigDecimal count;
