@@ -7,6 +7,7 @@ import javax.persistence.Column;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import java.lang.reflect.Field;
+import java.sql.Date;
 import java.util.Arrays;
 
 @Slf4j
@@ -21,7 +22,7 @@ public class SQLUtils {
     public static String readField(Field field, Object target) {
         try {
             Object o = FieldUtils.readField(field, target, true);
-            if (o instanceof String) {
+            if (o instanceof String || o instanceof Date) {
                 return "'" + o + "'";
             }
             return o.toString();
