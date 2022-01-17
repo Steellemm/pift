@@ -19,31 +19,28 @@ public class EntityManager {
     private final String USER;
     private final String PASSWORD;
 
-    public int flush() {
-        AtomicInteger rowsAffectedCount = new AtomicInteger(0);
-        createdEntitiesList.forEach(x -> rowsAffectedCount.addAndGet(saveEntity(x)));
-        log.debug(String.valueOf(rowsAffectedCount.get()));
+    public void flush() {
+        createdEntitiesList.forEach(this::saveEntity);
         createdEntitiesList.clear();
-        return rowsAffectedCount.get();
     }
 
     public <T> T create(Class<T> type) {
         return EntityUtils.create(type, createdEntitiesList);
     }
 
-    private int saveEntity(Object entity) {
-        return executeInsertQuery(entity);
+    private void saveEntity(Object entity) {
+        executeInsertQuery(entity);
     }
 
-    private int executeInsertQuery(Object entity){
-            String insertQuery = SQLUtils.createQueryForInsert(entity);
-            log.debug(insertQuery);
-            try (Connection con = DriverManager.getConnection(URL, USER, PASSWORD);
-                 Statement stmt = con.createStatement()) {
-                return stmt.executeUpdate(insertQuery);
-            } catch (Exception e) {
-                throw new IllegalArgumentException("Exception in connect method", e);
-            }
+    private void executeInsertQuery(Object entity) {
+        String insertQuery = SQLUtils.createQueryForInsert(entity);
+        log.debug(insertQuery);
+        try (Connection con = DriverManager.getConnection(URL, USER, PASSWORD);
+             Statement stmt = con.createStatement()) {
+            stmt.executeUpdate(insertQuery);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Exception in connect method", e);
+        }
     }
 
 }
