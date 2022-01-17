@@ -1,6 +1,7 @@
 package com.griddynamics.pift;
 
 import com.griddynamics.pift.Entities.Department;
+import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.*;
 
 import java.lang.reflect.Field;
@@ -12,6 +13,7 @@ class ReflectionUtilsTest {
     Department department;
     EntityManager entityManager = new EntityManager
             ("jdbc:postgresql://localhost:5432/postgres", "postgres", "postgres");
+    TestClass testClass = new TestClass("text");
 
     @BeforeEach
     void before(){
@@ -25,7 +27,7 @@ class ReflectionUtilsTest {
 
     @Test
     void getTableName() {
-        Assertions.assertNotNull(ReflectionUtils.getTableName(Department.class));
+        Assertions.assertEquals("department", ReflectionUtils.getTableName(Department.class));
     }
 
     @Test
@@ -35,13 +37,13 @@ class ReflectionUtilsTest {
 
     @Test
     void getFieldValue() {
-        Assertions.assertNotNull(ReflectionUtils.getFieldValue(department.getClass().getDeclaredFields()[0], department));
+        Assertions.assertEquals("text", ReflectionUtils.getFieldValue(testClass.getClass().getDeclaredFields()[0], testClass));
     }
 
     @Test
     void setFieldValue() {
-        ReflectionUtils.setFieldValue(department, getFirstStringField(department), "value");
-        Assertions.assertNotNull(ReflectionUtils.getFieldValue(getFirstStringField(department), department));
+        ReflectionUtils.setFieldValue(testClass, getFirstStringField(testClass), "value");
+        Assertions.assertEquals("value", ReflectionUtils.getFieldValue(getFirstStringField(testClass), testClass));
     }
 
     @Test
@@ -53,5 +55,14 @@ class ReflectionUtilsTest {
         return Arrays.stream(obj.getClass().getDeclaredFields())
                 .filter(field -> field.getType().getSimpleName().equals("String"))
                 .findFirst().get();
+    }
+
+
+    private static class TestClass{
+        String text;
+
+        public TestClass(String text) {
+            this.text = text;
+        }
     }
 }
