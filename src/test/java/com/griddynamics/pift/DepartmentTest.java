@@ -1,7 +1,6 @@
-package com.griddynamics.pift.Entities;
+package com.griddynamics.pift;
 
-import com.griddynamics.pift.Entities.Entities.Department;
-import com.griddynamics.pift.EntityManager;
+import com.griddynamics.pift.Entities.Department;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

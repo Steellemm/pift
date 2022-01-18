@@ -2,7 +2,6 @@ package com.griddynamics.pift;
 
 
 import lombok.experimental.UtilityClass;
-import org.apache.commons.lang3.reflect.FieldUtils;
 
 import javax.persistence.*;
 import java.lang.reflect.Field;
@@ -42,33 +41,16 @@ public class ReflectionUtils {
         }
     }
 
-    public String readField(Field field, Object target) {
-        try {
-            Object o = FieldUtils.readField(field, target, true);
-            if (o instanceof String) {
-                return "'" + o + "'";
-            }
-            return o.toString();
-        } catch (IllegalAccessException e) {
-            throw new IllegalArgumentException(e);
-        }
-    }
-
     public static void setFieldValue(Object obj, Field field, Object value) {
-        boolean accessStatus = setAccess(field, obj);
+        boolean accessStatus = field.canAccess(obj);
         try {
+            field.setAccessible(true);
             field.set(obj, value);
         } catch (Exception e) {
             throw new IllegalArgumentException("Exception in setField method", e);
         } finally {
             field.setAccessible(accessStatus);
         }
-    }
-
-    private static boolean setAccess(Field field, Object obj){
-        boolean accessStatus = field.canAccess(obj);
-        field.setAccessible(true);
-        return accessStatus;
     }
 
     public static <T> T createInstance(Class<T> type) {

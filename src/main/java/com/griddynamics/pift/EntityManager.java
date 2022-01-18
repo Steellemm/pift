@@ -3,8 +3,12 @@ package com.griddynamics.pift;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 
 @Slf4j
@@ -25,7 +29,18 @@ public class EntityManager {
     }
 
     private void saveEntity(Object entity) {
-        SQLUtils.connect(URL, USER, PASSWORD, entity);
+        executeInsertQuery(entity);
+    }
+
+    private void executeInsertQuery(Object entity) {
+        String insertQuery = SQLUtils.createQueryForInsert(entity);
+        log.debug(insertQuery);
+        try (Connection con = DriverManager.getConnection(URL, USER, PASSWORD);
+             Statement stmt = con.createStatement()) {
+            stmt.executeUpdate(insertQuery);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Exception in connect method", e);
+        }
     }
 
 }
