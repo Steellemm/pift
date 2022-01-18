@@ -45,7 +45,7 @@ class ReflectionUtilsTest {
 
     private Field getFirstStringField(Object obj){
         return Arrays.stream(obj.getClass().getDeclaredFields())
-                .filter(field -> field.getType().getSimpleName().equals("String"))
+                .filter(field -> field.getType().equals(String.class))
                 .findFirst().get();
     }
 
