@@ -63,6 +63,7 @@ public class ReflectionUtils {
         }
     }
 
+
     /**
      * Sets value in field.
      * @param obj object which field to be set.
@@ -80,6 +81,7 @@ public class ReflectionUtils {
             field.setAccessible(accessStatus);
         }
     }
+
 
     /**
      * Creates new instance of received class.
