@@ -1,20 +1,10 @@
 package com.griddynamics.pift;
 
-import com.griddynamics.pift.Entities.Department;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class SQLUtilsTest {
-    Department department;
-    EntityManager entityManager = new EntityManager
-            ("jdbc:postgresql://localhost:5432/postgres", "postgres", "postgres");
     TestClass testClass = new TestClass("text", 10);
-
-    @BeforeEach
-    void before(){
-        department = entityManager.create(Department.class);
-    }
 
     @Test
     void readField() {
@@ -24,7 +14,7 @@ class SQLUtilsTest {
 
     @Test
     void createQueryForInsert() {
-        Assertions.assertNotNull(SQLUtils.createQueryForInsert(department));
+        Assertions.assertNotNull(SQLUtils.createQueryForInsert(testClass));
     }
 
     private static class TestClass{

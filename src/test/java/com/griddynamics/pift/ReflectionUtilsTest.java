@@ -10,15 +10,7 @@ import java.util.Arrays;
 import static org.junit.jupiter.api.Assertions.*;
 
 class ReflectionUtilsTest {
-    Department department;
-    EntityManager entityManager = new EntityManager
-            ("jdbc:postgresql://localhost:5432/postgres", "postgres", "postgres");
     TestClass testClass = new TestClass("text");
-
-    @BeforeEach
-    void before(){
-        department = entityManager.create(Department.class);
-    }
 
     @Test
     @Disabled
@@ -32,7 +24,7 @@ class ReflectionUtilsTest {
 
     @Test
     void getColumnFields() {
-        Assertions.assertTrue(ReflectionUtils.getColumnFields(department).findFirst().isPresent());
+        Assertions.assertEquals(1, ReflectionUtils.getColumnFields(testClass).count());
     }
 
     @Test
