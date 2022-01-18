@@ -12,11 +12,10 @@ import java.util.Arrays;
 @Slf4j
 public class SQLUtils {
 
-    /***
+    /**
      * Returns the field value valid for the request.
      * @param field to be read.
      * @param target object to be read from.
-     * @return String value of field.
      */
     public static String readField(Field field, Object target) {
         try {
@@ -30,10 +29,8 @@ public class SQLUtils {
         }
     }
 
-    /***
+    /**
      * Creates query for insert data into database.
-     * @param entity object.
-     * @return String query
      */
     public static String createQueryForInsert(Object entity) {
         Class<?> type = entity.getClass();
@@ -57,9 +54,8 @@ public class SQLUtils {
         return insertQuery.append(") values (").append(values).append(")").toString();
     }
 
-    /***
+    /**
      * Gets id field from object reference field.
-     * @param entity object.
      * @param field that references another object.
      * @return id field
      */
@@ -69,7 +65,7 @@ public class SQLUtils {
                 .findFirst().orElseThrow(() -> new IllegalArgumentException("Exception in getIdField method"));
     }
 
-    /***
+    /**
      * Gets the table column name that matches the received field.
      * @param field to be matched.
      * @return String name of column.

@@ -11,7 +11,7 @@ import java.util.stream.Stream;
 @UtilityClass
 public class ReflectionUtils {
 
-    /***
+    /**
      * Checks if received field is filled in the object.
      * @param field to be checked.
      * @param object target.
@@ -21,7 +21,7 @@ public class ReflectionUtils {
         return getFieldValue(field, object) == null;
     }
 
-    /***
+    /**
      * Gets the table name of received class.
      * @param type object.
      * @return String name of table.
@@ -35,7 +35,7 @@ public class ReflectionUtils {
     }
 
 
-    /***
+    /**
      * Gets object fields that need to be matched with table columns.
      * @param entity object.
      * @return Stream of fields.
@@ -46,8 +46,7 @@ public class ReflectionUtils {
                 .filter(field -> !field.isAnnotationPresent(Version.class));
     }
 
-    /***
-     *
+    /**
      * @param field to be got.
      * @param object to be read from.
      * @return Object field value.
@@ -64,7 +63,7 @@ public class ReflectionUtils {
         }
     }
 
-    /***
+    /**
      * Sets value in field.
      * @param obj object which field to be set.
      * @param field to be set.
@@ -82,7 +81,7 @@ public class ReflectionUtils {
         }
     }
 
-    /***
+    /**
      * Creates new instance of received class.
      * @param type object.
      * @return new instance of received class.

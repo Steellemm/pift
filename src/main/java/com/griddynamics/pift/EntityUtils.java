@@ -16,7 +16,7 @@ import java.util.function.Function;
 public class EntityUtils {
     private final Faker faker = new Faker();
 
-    /***
+    /**
      * Map for autogenerate random values,
      * where key - class of field type
      * value - lambda that generates value for this type
@@ -28,11 +28,8 @@ public class EntityUtils {
             BigDecimal.class, field -> new BigDecimal(faker.number().randomNumber())
     );
 
-    /***
+    /**
      * Creates new instance of type parameter and add it in createdEntitiesList.
-     * @param type object.
-     * @param createdEntitiesList list of created entities.
-     * @return new instance of type class with random values in fields.
      */
     public static <T> T create(Class<T> type, List<Object> createdEntitiesList) {
         T object = ReflectionUtils.createInstance(type);
@@ -45,11 +42,9 @@ public class EntityUtils {
         return object;
     }
 
-    /***
+    /**
      * Sets fields in object and his superclasses.
-     * @param type object.
      * @param object which field needs to set.
-     * @param createdEntitiesList list of created entities.
      */
     private static void setFields(Class<?> type, Object object, List<Object> createdEntitiesList) {
         do {
@@ -59,12 +54,6 @@ public class EntityUtils {
         } while (type != Object.class);
     }
 
-    /***
-     * Sets field random value.
-     * @param obj object.
-     * @param field that needs to set.
-     * @param createdEntitiesList list of created entities.
-     */
     private static void setFieldRandom(Object obj, Field field, List<Object> createdEntitiesList) {
         try {
             if (fieldsMapping.containsKey(field.getType())) {
