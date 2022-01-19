@@ -16,6 +16,11 @@ import java.util.function.Function;
 public class EntityUtils {
     private final Faker faker = new Faker();
 
+    /**
+     * Map for autogenerate random values,
+     * where key - class of field type
+     * value - lambda that generates value for this type
+     */
     private final Map<Class<?>, Function<Field, Object>> fieldsMapping = Map.of(
             Long.class, field -> faker.number().randomNumber(),
             String.class, field -> faker.animal().name(),
@@ -23,6 +28,9 @@ public class EntityUtils {
             BigDecimal.class, field -> new BigDecimal(faker.number().randomNumber())
     );
 
+    /**
+     * Creates new instance of type parameter and add it in createdEntitiesList.
+     */
     public static <T> T create(Class<T> type, List<Object> createdEntitiesList) {
         T object = ReflectionUtils.createInstance(type);
         createdEntitiesList.add(object);
@@ -34,10 +42,14 @@ public class EntityUtils {
         return object;
     }
 
-    private static void setFields(Class<?> type, Object object, List<Object> list) {
+    /**
+     * Sets fields in object and his superclasses.
+     * @param object which field needs to set.
+     */
+    private static void setFields(Class<?> type, Object object, List<Object> createdEntitiesList) {
         do {
             Arrays.stream(type.getDeclaredFields()).filter(field -> ReflectionUtils.checkIfFieldFilled(field, object))
-                    .forEach(field -> setFieldRandom(object, field, list));
+                    .forEach(field -> setFieldRandom(object, field, createdEntitiesList));
             type = type.getSuperclass();
         } while (type != Object.class);
     }
