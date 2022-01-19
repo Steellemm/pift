@@ -10,11 +10,11 @@ import java.util.*;
 import java.util.function.Function;
 
 
-
 @UtilityClass
 @Slf4j
 public class EntityUtils {
     private final Faker faker = new Faker();
+    private static int counter = 0;
 
     /**
      * Map for autogenerate random values,
@@ -42,8 +42,24 @@ public class EntityUtils {
         return object;
     }
 
+    public static String getEntityClassName(String entityClassName, Map<String, Object> createdEntitiesMap) {
+        try {
+            if (createdEntitiesMap.containsKey(entityClassName)){
+                counter++;
+                if (counter > 1)
+                    entityClassName = entityClassName.replace((char) (counter-1), (char) counter);
+                else entityClassName = entityClassName + counter;
+                return getEntityClassName(entityClassName, createdEntitiesMap);
+            }
+            return entityClassName;
+        } finally {
+            counter = 0;
+        }
+    }
+
     /**
      * Sets fields in object and his superclasses.
+     *
      * @param object which field needs to set.
      */
     private static void setFields(Class<?> type, Object object, List<Object> createdEntitiesList) {

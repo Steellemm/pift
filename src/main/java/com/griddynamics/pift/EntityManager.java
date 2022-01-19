@@ -7,13 +7,16 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 
 @Slf4j
 @RequiredArgsConstructor
 public class EntityManager {
+    private final Map<String, Object> createdEntitiesMap = new HashMap<>();
     private final List<Object> createdEntitiesList = new ArrayList<>();
     private final String URL;
     private final String USER;
@@ -24,6 +27,7 @@ public class EntityManager {
      */
     public void flush() {
         createdEntitiesList.forEach(this::saveEntity);
+        log.debug(createdEntitiesMap.toString());
         createdEntitiesList.clear();
     }
 
@@ -34,7 +38,17 @@ public class EntityManager {
      * @return new instance of type class.
      */
     public <T> T create(Class<T> type) {
-        return EntityUtils.create(type, createdEntitiesList);
+        T object = EntityUtils.create(type, createdEntitiesList);
+        createdEntitiesMap.put(EntityUtils
+                .getEntityClassName(object.getClass().getSimpleName(), createdEntitiesMap), object);
+        return object;
+    }
+
+    public <T> T create(Class<T> type, String entityId) {
+        T object = EntityUtils.create(type, createdEntitiesList);
+        createdEntitiesMap.put(EntityUtils
+                .getEntityClassName(entityId, createdEntitiesMap), object);
+        return object;
     }
 
     /**
