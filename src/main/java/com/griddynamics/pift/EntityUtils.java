@@ -7,6 +7,11 @@ import lombok.extern.slf4j.Slf4j;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.sql.Date;
+import java.sql.Timestamp;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.*;
 import java.util.function.Function;
 
@@ -21,7 +26,10 @@ public class EntityUtils {
             String.class, field -> faker.animal().name(),
             Integer.class, field -> faker.number().numberBetween(Integer.MIN_VALUE, Integer.MAX_VALUE),
             BigDecimal.class, field -> new BigDecimal(faker.number().randomNumber()),
-            java.sql.Date.class, field -> new Date(faker.date().birthday().getTime())
+            java.sql.Date.class, field -> new Date(faker.date().birthday().getTime()),
+            java.sql.Timestamp.class, field -> Timestamp.from(Instant.now()),
+            LocalDate.class, field -> faker.date().birthday().toInstant().atZone(ZoneId.of("Europe/Moscow")).toLocalDate(),
+            LocalDateTime.class, field -> LocalDateTime.ofInstant(Instant.now(), ZoneId.of("Europe/Moscow"))
     );
 
     public static <T> T create(Class<T> type, List<Object> createdEntitiesList) {

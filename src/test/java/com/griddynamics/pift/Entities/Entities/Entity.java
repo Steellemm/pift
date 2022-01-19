@@ -6,6 +6,9 @@ import lombok.Setter;
 import javax.persistence.*;
 import java.math.BigDecimal;
 import java.sql.Date;
+import java.sql.Timestamp;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 
 @Setter
@@ -29,6 +32,15 @@ public class Entity extends SuperEntity{
 
     @Column
     private Date date;
+
+    @Column
+    private Timestamp timestamp;
+
+    @Column
+    private LocalDate localDate;
+
+    @Column
+    private LocalDateTime localDateTime;
 
     @Column
     private BigDecimal count;
