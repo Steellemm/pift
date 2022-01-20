@@ -8,7 +8,6 @@ import java.sql.DriverManager;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 
 
 @Slf4j
@@ -43,7 +42,6 @@ public class EntityManager {
     private void saveEntity(Object entity) {
         executeQuery(SQLUtils.createQueryForInsert(entity));
     }
-
 
     private void executeQuery(String query) {
         log.debug(query);
