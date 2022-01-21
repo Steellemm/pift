@@ -3,12 +3,11 @@ package com.griddynamics.pift;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.Statement;
+import java.lang.reflect.Field;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.Optional;
 
 
 @Slf4j
@@ -27,6 +26,60 @@ public class EntityManager {
         createdEntitiesList.clear();
     }
 
+    public <T> List<T> getList(T entity) {
+        Class<T> type = (Class<T>) entity.getClass();
+        EntityUtils.checkOnTable(type);
+        String queryForSelect = SQLUtils.createQueryForSelect(entity);
+        List<T> entityList = new ArrayList<>();
+        try (Connection con = DriverManager.getConnection(URL, USER, PASSWORD);
+             Statement stmt = con.createStatement();
+             ResultSet rs = stmt.executeQuery(queryForSelect)
+        ) {
+            log.info(queryForSelect);
+            while (rs.next()) {
+                entityList.add(getEntityFromResultSet(type, rs));
+            }
+            return entityList;
+        } catch (Exception e) {
+            throw new IllegalStateException("Error in SQL", e);
+        }
+    }
+
+    public <T> Optional<T> getById(Class<T> type, Object id) {
+        EntityUtils.checkOnTable(type);
+        String query = SQLUtils.createQueryForSelectById(type, id);
+        log.debug(query);
+        try (Connection con = DriverManager.getConnection(URL, USER, PASSWORD);
+             Statement stmt = con.createStatement();
+             ResultSet rs = stmt.executeQuery(query)
+        ) {
+            if (rs.isBeforeFirst()) {
+                rs.next();
+                return Optional.of(getEntityFromResultSet(type, rs));
+            } else return Optional.empty();
+        } catch (Exception e) {
+            throw new IllegalStateException("Error in SQL", e);
+        }
+    }
+
+    private <T> T getEntityFromResultSet(Class<T> type, ResultSet resultSet) {
+        T entityInstance = ReflectionUtils.createInstance(type);
+        ReflectionUtils.getColumnFields(type).forEach(field -> {
+            try {
+                if (EntityUtils.checkOnReferenceType(field)) {
+                    ReflectionUtils.setFieldValue(entityInstance, field,
+                            getById(field.getType(), resultSet.getObject(SQLUtils.getColumnName(field)))
+                                    .orElse(null));
+                } else
+                    ReflectionUtils.setFieldValue
+                            (entityInstance, field, resultSet.getObject(SQLUtils.getColumnName(field)));
+            } catch (Exception e) {
+                throw new IllegalStateException("Error in SQL", e);
+            }
+        });
+        return entityInstance;
+    }
+
     /**
      * Creates new instance of type class with random values in fields.
      *
@@ -43,7 +96,6 @@ public class EntityManager {
     private void saveEntity(Object entity) {
         executeQuery(SQLUtils.createQueryForInsert(entity));
     }
-
 
     private void executeQuery(String query) {
         log.debug(query);

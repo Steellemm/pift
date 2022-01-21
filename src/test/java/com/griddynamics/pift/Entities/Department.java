@@ -17,4 +17,11 @@ public class Department {
     @Column(name = "location")
     private String location;
 
+    @Override
+    public String toString() {
+        return "Department{" +
+                "id=" + id +
+                ", location='" + location + '\'' +
+                '}';
+    }
 }
