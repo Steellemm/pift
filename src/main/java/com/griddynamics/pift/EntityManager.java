@@ -27,7 +27,6 @@ public class EntityManager {
      */
     public void flush() {
         createdEntitiesList.forEach(this::saveEntity);
-        log.debug(createdEntitiesMap.toString());
         createdEntitiesList.clear();
     }
 
@@ -38,16 +37,13 @@ public class EntityManager {
      * @return new instance of type class.
      */
     public <T> T create(Class<T> type) {
-        T object = EntityUtils.create(type, createdEntitiesList);
-        createdEntitiesMap.put(EntityUtils
-                .getEntityClassName(object.getClass().getSimpleName(), createdEntitiesMap), object);
-        return object;
+        return create(type, type.getSimpleName());
     }
 
     public <T> T create(Class<T> type, String entityId) {
+        log.debug(createdEntitiesMap.keySet().toString());
         T object = EntityUtils.create(type, createdEntitiesList);
-        createdEntitiesMap.put(EntityUtils
-                .getEntityClassName(entityId, createdEntitiesMap), object);
+        createdEntitiesMap.put(getEntityClassName(entityId), object);
         return object;
     }
 
@@ -67,6 +63,15 @@ public class EntityManager {
         } catch (Exception e) {
             throw new IllegalArgumentException("Exception in connect method", e);
         }
+    }
+
+    private String getEntityClassName(String entityClassName) {
+        String str = entityClassName;
+        int counter = 0;
+        while (createdEntitiesMap.containsKey(entityClassName)) {
+            entityClassName = str + (++counter);
+        }
+        return entityClassName;
     }
 
 }

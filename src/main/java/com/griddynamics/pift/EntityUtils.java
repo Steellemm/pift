@@ -14,7 +14,6 @@ import java.util.function.Function;
 @Slf4j
 public class EntityUtils {
     private final Faker faker = new Faker();
-    private static int counter = 0;
 
     /**
      * Map for autogenerate random values,
@@ -40,21 +39,6 @@ public class EntityUtils {
             throw new IllegalArgumentException("Exception in create method", e);
         }
         return object;
-    }
-
-    public static String getEntityClassName(String entityClassName, Map<String, Object> createdEntitiesMap) {
-        try {
-            if (createdEntitiesMap.containsKey(entityClassName)){
-                counter++;
-                if (counter > 1)
-                    entityClassName = entityClassName.replace((char) (counter-1), (char) counter);
-                else entityClassName = entityClassName + counter;
-                return getEntityClassName(entityClassName, createdEntitiesMap);
-            }
-            return entityClassName;
-        } finally {
-            counter = 0;
-        }
     }
 
     /**
