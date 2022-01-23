@@ -41,6 +41,10 @@ class EntityTest {
 
     @Test
     void test(){
+        entityManager.create(Department.class);
+        entityManager.create(Department.class);
+        entityManager.create(Department.class);
+
     }
 
     @Test

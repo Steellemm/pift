@@ -53,6 +53,7 @@ public class EntityUtils {
 
     /**
      * Sets fields in object and his superclasses.
+     *
      * @param object which field needs to set.
      */
     private static void setFields(Class<?> type, Object object, List<Object> createdEntitiesList) {
