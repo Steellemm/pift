@@ -35,8 +35,8 @@ public class EntityUtils {
             BigDecimal.class, field -> new BigDecimal(faker.number().randomNumber()),
             java.sql.Date.class, field -> new Date(faker.date().birthday().getTime()),
             java.sql.Timestamp.class, field -> Timestamp.from(Instant.now()),
-            LocalDate.class, field -> faker.date().birthday().toInstant().atZone(ZoneId.of("Europe/Moscow")).toLocalDate(),
-            LocalDateTime.class, field -> LocalDateTime.ofInstant(Instant.now(), ZoneId.of("Europe/Moscow"))
+            LocalDate.class, field -> faker.date().birthday().toInstant().atZone(ZoneId.of("Europe/London")).toLocalDate(),
+            LocalDateTime.class, field -> LocalDateTime.ofInstant(Instant.now(), ZoneId.of("Europe/London"))
     );
 
     /**

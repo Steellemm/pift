@@ -9,10 +9,8 @@ import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.Version;
 import java.lang.reflect.Field;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
+import java.time.temporal.Temporal;
+import java.util.*;
 
 @Slf4j
 @UtilityClass
@@ -33,7 +31,7 @@ public class SQLUtils {
     public static String readField(Field field, Object target) {
         try {
             Object o = FieldUtils.readField(field, target, true);
-            if (o instanceof String) {
+            if (o instanceof String || o instanceof Date || o instanceof Temporal) {
                 return "'" + o + "'";
             }
             return o.toString();
