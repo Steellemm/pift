@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @Slf4j
 class EntityTest {
@@ -44,12 +45,33 @@ class EntityTest {
     }
 
     @Test
-    void test() {
+    void getList() {
         Entity entity = new Entity();
         entity.setName("snake");
         entity.setCount(BigDecimal.valueOf(345742));
+        List<Entity> list = entityManager.getList(entity);
+        Entity actualEntity = list.get(0);
 
-        log.debug(entityManager.getList(entity).toString());
+        log.debug(list.toString());
+
+        Assertions.assertEquals(6, actualEntity.getId());
+        Assertions.assertEquals(425821, actualEntity.getNumber());
+        Assertions.assertEquals("snake", actualEntity.getName());
+        Assertions.assertNull(actualEntity.getAge());
+        Assertions.assertEquals(new BigDecimal(345742), actualEntity.getCount());
+        Assertions.assertNotNull(actualEntity.getDepartment());
+    }
+
+    @Test
+    void getById(){
+        Entity entity = entityManager.getById(Entity.class, 6).orElse(null);
+        Assertions.assertNotNull(entity);
+        Assertions.assertEquals(6, entity.getId());
+        Assertions.assertEquals(425821, entity.getNumber());
+        Assertions.assertEquals("snake", entity.getName());
+        Assertions.assertNull(entity.getAge());
+        Assertions.assertEquals(new BigDecimal(345742), entity.getCount());
+        Assertions.assertNotNull(entity.getDepartment());
     }
 
     @Test

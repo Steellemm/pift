@@ -13,6 +13,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.sql.ResultSet;
 import java.util.*;
 import java.util.function.Function;
 
@@ -52,8 +53,10 @@ public class EntityUtils {
         return object;
     }
 
-    public static boolean checkOnReferenceType(Field field) {
-        return !fieldsMapping.containsKey(field.getType());
+    public <T> T getEntityFromResultSet(Class<T> type, ResultSet resultSet) {
+        T entityInstance = ReflectionUtils.createInstance(type);
+        ReflectionUtils.getColumnFields(type).forEach(field -> setField(entityInstance, resultSet, field));
+        return entityInstance;
     }
 
     public static void checkOnTable(Class<?> type) {
@@ -88,6 +91,26 @@ public class EntityUtils {
             }
         } catch (Exception e) {
             throw new IllegalArgumentException("Exception in setField method", e);
+        }
+    }
+
+    private <T> Object getEntityWithId(Class<T> type, Object id) {
+        Object obj = ReflectionUtils.createInstance(type);
+        ReflectionUtils.setFieldValue(obj, SQLUtils.getIdField(type), id);
+        return obj;
+    }
+
+    private void setField(Object entity, ResultSet resultSet, Field field){
+        try {
+            if (fieldsMapping.containsKey(field.getType())) {
+                ReflectionUtils.setFieldValue
+                        (entity, field, resultSet.getObject(SQLUtils.getColumnName(field)));
+            } else {
+                ReflectionUtils.setFieldValue(entity, field,
+                        getEntityWithId(field.getType(), resultSet.getObject(SQLUtils.getColumnName(field))));
+            }
+        } catch (Exception e) {
+            throw new IllegalStateException("Exception in setField method", e);
         }
     }
 }

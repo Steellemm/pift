@@ -1,5 +1,6 @@
 package com.griddynamics.pift;
 
+import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.reflect.FieldUtils;
 
@@ -9,11 +10,19 @@ import javax.persistence.JoinColumn;
 import javax.persistence.Version;
 import java.lang.reflect.Field;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Set;
 
 @Slf4j
+@UtilityClass
 public class SQLUtils {
+
+    private static final Set<Class<?>> exclusionAnnotationSet = Set.of(
+            JoinColumn.class,
+            Id.class,
+            Version.class
+    );
 
     /**
      * Returns the field value valid for the request.
@@ -98,7 +107,7 @@ public class SQLUtils {
         return obj.toString();
     }
 
-    private static Field getIdField(Class<?> type) {
+    public static Field getIdField(Class<?> type) {
         return Arrays.stream(type.getDeclaredFields())
                 .filter(x -> x.isAnnotationPresent(Id.class))
                 .findFirst().orElseThrow(() -> new IllegalArgumentException("Exception in getIdField method"));
@@ -130,9 +139,8 @@ public class SQLUtils {
 
     private static List<Field> getNotNullColumnFields(Object entity) {
         return Arrays.stream(entity.getClass().getDeclaredFields())
-                .filter(field -> !field.isAnnotationPresent(JoinColumn.class))
-                .filter(field -> !field.isAnnotationPresent(Id.class) && !field.isAnnotationPresent(Version.class))
+                .filter(field -> Collections.disjoint(exclusionAnnotationSet, Set.of(field.getAnnotations())))
                 .filter(field -> ReflectionUtils.getFieldValue(field, entity) != null)
-                .collect(Collectors.toList());
+                .toList();
     }
 }
