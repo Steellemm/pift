@@ -5,14 +5,17 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
+import java.util.Map;
 
 
 
 @Slf4j
 @RequiredArgsConstructor
 public class EntityManager {
+    private final Map<String, Object> createdEntitiesMap = new HashMap<>();
     private final List<Object> createdEntitiesList = new ArrayList<>();
     private final String url;
     private final String user;
@@ -70,7 +73,14 @@ public class EntityManager {
      * @return new instance of type class.
      */
     public <T> T create(Class<T> type) {
-        return EntityUtils.create(type, createdEntitiesList);
+        return create(type, type.getSimpleName());
+    }
+
+    public <T> T create(Class<T> type, String entityId) {
+        log.debug(createdEntitiesMap.keySet().toString());
+        T object = EntityUtils.create(type, createdEntitiesList);
+        createdEntitiesMap.put(getEntityClassName(entityId), object);
+        return object;
     }
 
     /**
@@ -88,6 +98,15 @@ public class EntityManager {
         } catch (Exception e) {
             throw new IllegalArgumentException("Exception in connect method", e);
         }
+    }
+
+    private String getEntityClassName(String entityClassName) {
+        String str = entityClassName;
+        int counter = 0;
+        while (createdEntitiesMap.containsKey(entityClassName)) {
+            entityClassName = str + (++counter);
+        }
+        return entityClassName;
     }
 
 }
