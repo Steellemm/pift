@@ -1,8 +1,14 @@
 package com.griddynamics.pift;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.griddynamics.pift.pojo.ColumnProps;
+import com.griddynamics.pift.pojo.Pojo;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import java.io.File;
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.Statement;
@@ -21,6 +27,7 @@ public class EntityManager {
     private final String URL;
     private final String USER;
     private final String PASSWORD;
+
 
     /**
      * Pushes the objects from createdEntitiesList into database and then clears the list.

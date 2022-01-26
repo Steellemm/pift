@@ -1,11 +1,17 @@
 package com.griddynamics.pift;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.griddynamics.pift.Entities.Department;
 import com.griddynamics.pift.Entities.Entity;
+import com.griddynamics.pift.pojo.Pojo;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+
+import java.io.File;
+import java.io.IOException;
 
 class EntityTest {
     Entity entity;
@@ -13,7 +19,7 @@ class EntityTest {
             ("jdbc:postgresql://localhost:5432/postgres", "postgres", "postgres");
 
     @BeforeEach
-    void before(){
+    void before() {
         entityManager.create(Department.class);
         entity = entityManager.create(Entity.class);
     }
@@ -40,11 +46,13 @@ class EntityTest {
     }
 
     @Test
-    void test(){
-        entityManager.create(Department.class);
-        entityManager.create(Department.class);
-        entityManager.create(Department.class);
-
+    void test() {
+        ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
+        try {
+            Pojo pojo = mapper.readValue(new File("src/main/resources/pift.yaml"), Pojo.class);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     @Test
