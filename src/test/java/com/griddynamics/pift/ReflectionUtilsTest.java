@@ -24,7 +24,7 @@ class ReflectionUtilsTest {
 
     @Test
     void getColumnFields() {
-        Assertions.assertEquals(1, ReflectionUtils.getColumnFields(testClass).count());
+        Assertions.assertEquals(1, ReflectionUtils.getColumnFields(testClass.getClass()).count());
     }
 
     @Test

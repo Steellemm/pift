@@ -37,14 +37,14 @@ public class ReflectionUtils {
 
     /**
      * Gets object fields that need to be matched with table columns.
-     * @param entity object.
      * @return Stream of fields.
      */
-    public static Stream<Field> getColumnFields(Object entity) {
-        return Arrays.stream(entity.getClass().getDeclaredFields())
+    public static Stream<Field> getColumnFields(Class<?> type) {
+        return Arrays.stream(type.getDeclaredFields())
                 .filter(field -> !field.isAnnotationPresent(Transient.class))
                 .filter(field -> !field.isAnnotationPresent(Version.class));
     }
+
 
     /**
      * @param field to be got.

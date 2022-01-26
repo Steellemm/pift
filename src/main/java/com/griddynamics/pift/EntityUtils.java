@@ -4,6 +4,7 @@ import com.github.javafaker.Faker;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
+import javax.persistence.Table;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.sql.Date;
@@ -12,6 +13,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.sql.ResultSet;
 import java.util.*;
 import java.util.function.Function;
 
@@ -33,8 +35,8 @@ public class EntityUtils {
             BigDecimal.class, field -> new BigDecimal(faker.number().randomNumber()),
             java.sql.Date.class, field -> new Date(faker.date().birthday().getTime()),
             java.sql.Timestamp.class, field -> Timestamp.from(Instant.now()),
-            LocalDate.class, field -> faker.date().birthday().toInstant().atZone(ZoneId.of("Europe/Moscow")).toLocalDate(),
-            LocalDateTime.class, field -> LocalDateTime.ofInstant(Instant.now(), ZoneId.of("Europe/Moscow"))
+            LocalDate.class, field -> faker.date().birthday().toInstant().atZone(ZoneId.of("Europe/London")).toLocalDate(),
+            LocalDateTime.class, field -> LocalDateTime.ofInstant(Instant.now(), ZoneId.of("Europe/London"))
     );
 
     /**
@@ -49,6 +51,18 @@ public class EntityUtils {
             throw new IllegalArgumentException("Exception in create method", e);
         }
         return object;
+    }
+
+    public <T> T getEntityFromResultSet(Class<T> type, ResultSet resultSet) {
+        T entityInstance = ReflectionUtils.createInstance(type);
+        ReflectionUtils.getColumnFields(type).forEach(field -> setField(entityInstance, resultSet, field));
+        return entityInstance;
+    }
+
+    public static void checkOnTable(Class<?> type) {
+        if (!type.isAnnotationPresent(Table.class)) {
+            throw new IllegalArgumentException("POJO is not reflection of table: " + type.getCanonicalName());
+        }
     }
 
     /**
@@ -77,6 +91,26 @@ public class EntityUtils {
             }
         } catch (Exception e) {
             throw new IllegalArgumentException("Exception in setField method", e);
+        }
+    }
+
+    private <T> Object getEntityWithId(Class<T> type, Object id) {
+        Object obj = ReflectionUtils.createInstance(type);
+        ReflectionUtils.setFieldValue(obj, SQLUtils.getIdField(type), id);
+        return obj;
+    }
+
+    private void setField(Object entity, ResultSet resultSet, Field field){
+        try {
+            if (fieldsMapping.containsKey(field.getType())) {
+                ReflectionUtils.setFieldValue
+                        (entity, field, resultSet.getObject(SQLUtils.getColumnName(field)));
+            } else {
+                ReflectionUtils.setFieldValue(entity, field,
+                        getEntityWithId(field.getType(), resultSet.getObject(SQLUtils.getColumnName(field))));
+            }
+        } catch (Exception e) {
+            throw new IllegalStateException("Exception in setField method", e);
         }
     }
 }

@@ -49,5 +49,16 @@ public class Entity extends SuperEntity{
     @JoinColumn(name = "dept_id", referencedColumnName = "id")
     private Department department;
 
+    @Override
+    public String toString() {
+        return "Entity{" +
+                "id=" + id +
+                ", number=" + number +
+                ", name='" + name + '\'' +
+                ", age=" + age +
+                ", count=" + count +
+                ", department=" + department +
+                '}';
+    }
 }
 
