@@ -1,0 +1,19 @@
+tables:
+  table_name1:
+    columns:
+      column_name1:
+        foreign_key: table_name2.column_name2
+      column_name2:
+        type: date
+        format: 'yyyy-mm-dd'
+        condition:
+          max: 'current'
+          min: '1995-12-13'
+      column_name3:
+        type: string
+        format: '####-####-####'
+      column_name4:
+        type: int
+        condition:
+          max: 10
+          min: 0

@@ -3,6 +3,11 @@ package com.griddynamics.pift;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import java.io.File;
+import java.io.IOException;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.Statement;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -20,6 +25,7 @@ public class EntityManager {
     private final String url;
     private final String user;
     private final String password;
+
 
     /**
      * Pushes the objects from createdEntitiesList into database and then clears the list.

@@ -1,9 +1,14 @@
 package com.griddynamics.pift;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.github.javafaker.Faker;
+import com.griddynamics.pift.pojo.ColumnProps;
+import com.griddynamics.pift.pojo.Pojo;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
+import java.io.File;
 import javax.persistence.Table;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
@@ -91,6 +96,17 @@ public class EntityUtils {
             }
         } catch (Exception e) {
             throw new IllegalArgumentException("Exception in setField method", e);
+        }
+    }
+
+    public static ColumnProps getProps(String tableName, String columnName){
+        ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
+        try {
+            return mapper.readValue(new File(PATH), Pojo.class)
+                    .tables.get(tableName)
+                    .columns.get(columnName);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Excpetion in getParams method", e);
         }
     }
 
