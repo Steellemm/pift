@@ -8,13 +8,6 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.Statement;
 import java.util.*;
-import java.sql.*;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Optional;
-import java.util.Map;
-
 
 
 @Slf4j
@@ -129,7 +122,7 @@ public class EntityManager {
 
     private void executeQuery(String query) {
         log.debug(query);
-        try (Connection con = DriverManager.getConnection(url, user, password);
+        try (Connection con = DriverManager.getConnection(URL, USER, PASSWORD);
              Statement stmt = con.createStatement()) {
             stmt.executeUpdate(query);
         } catch (Exception e) {
