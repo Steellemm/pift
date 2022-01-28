@@ -27,10 +27,10 @@ public class Entity extends SuperEntity{
     private String name;
 
     @Column
-    @Transient
     private Integer age;
 
     @Column
+    @Transient
     private Date date;
 
     @Column

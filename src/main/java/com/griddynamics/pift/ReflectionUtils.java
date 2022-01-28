@@ -34,6 +34,10 @@ public class ReflectionUtils {
         return type.getSimpleName();
     }
 
+    public static String getTableName(Field field) {
+        return getTableName(field.getDeclaringClass());
+    }
+
 
     /**
      * Gets object fields that need to be matched with table columns.

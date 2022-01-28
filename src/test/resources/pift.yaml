@@ -1,19 +1,20 @@
 tables:
-  table_name1:
+  entity:
+    foreign-keys:
+      column_name1: table_name2
     columns:
-      column_name1:
-        foreign_key: table_name2.column_name2
       column_name2:
-        type: date
+        type: DATE
         format: 'yyyy-mm-dd'
         condition:
           max: 'current'
           min: '1995-12-13'
       column_name3:
-        type: string
+        type: STRING
         format: '####-####-####'
-      column_name4:
-        type: int
+      age:
+        type: NUMBER
+        format: '##.###'
         condition:
           max: 10
           min: 0

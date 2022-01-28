@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.griddynamics.pift.Entities.Department;
 import com.griddynamics.pift.Entities.Entity;
+import com.griddynamics.pift.model.PiftProperties;
 import com.griddynamics.pift.pojo.Pojo;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
