@@ -7,7 +7,9 @@ import javax.persistence.Column;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import java.lang.reflect.Field;
+import java.time.temporal.Temporal;
 import java.util.Arrays;
+import java.util.Date;
 
 @Slf4j
 public class SQLUtils {
@@ -20,7 +22,7 @@ public class SQLUtils {
     public static String readField(Field field, Object target) {
         try {
             Object o = FieldUtils.readField(field, target, true);
-            if (o instanceof String) {
+            if (o instanceof String || o instanceof Date || o instanceof Temporal) {
                 return "'" + o + "'";
             }
             return o.toString();
@@ -70,7 +72,7 @@ public class SQLUtils {
      * @param field to be matched.
      * @return String name of column.
      */
-    private static String getColumnName(Field field) {
+    public static String getColumnName(Field field) {
         if (field.isAnnotationPresent(JoinColumn.class)) {
             return field.getAnnotation(JoinColumn.class).name();
         }
