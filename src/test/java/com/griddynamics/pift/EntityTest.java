@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.griddynamics.pift.Entities.Department;
 import com.griddynamics.pift.Entities.Entity;
-import com.griddynamics.pift.pojo.Pojo;
+import com.griddynamics.pift.model.PiftProperties;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -49,7 +49,7 @@ class EntityTest {
     void test() {
         ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
         try {
-            Pojo pojo = mapper.readValue(new File("src/main/resources/pift.yaml"), Pojo.class);
+            PiftProperties piftProperties = mapper.readValue(new File("src/main/resources/pift.yaml"), PiftProperties.class);
         } catch (IOException e) {
             e.printStackTrace();
         }
