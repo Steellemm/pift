@@ -73,6 +73,22 @@ public class SQLUtils {
         return insertQuery.append(") values (").append(values).append(")").toString();
     }
 
+    public static Field getIdField(Object entity) {
+        return Arrays.stream(entity.getClass().getDeclaredFields()).filter(x -> x.isAnnotationPresent(Id.class))
+                .findFirst().orElseThrow(() -> new IllegalArgumentException("Exception in getIdField method"));
+    }
+
+    /**
+     * Gets id field from object reference field.
+     * @param field that references another object.
+     * @return id field
+     */
+    public static Field getIdField(Object entity, Field field) {
+        return Arrays.stream(ReflectionUtils.getFieldValue(field, entity).getClass()
+                        .getDeclaredFields()).filter(x -> x.isAnnotationPresent(Id.class))
+                .findFirst().orElseThrow(() -> new IllegalArgumentException("Exception in getIdField method"));
+    }
+
     /**
      * Gets the table column name that matches the received field.
      *

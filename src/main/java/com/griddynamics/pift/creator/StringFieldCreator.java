@@ -3,6 +3,7 @@ package com.griddynamics.pift.creator;
 import com.github.javafaker.Faker;
 import com.griddynamics.pift.model.Column;
 import com.griddynamics.pift.model.FieldType;
+import nl.flotsam.xeger.Xeger;
 
 import java.lang.reflect.Field;
 
@@ -12,10 +13,11 @@ public class StringFieldCreator implements FieldCreator {
 
     @Override
     public Object createValue(Field field, Column column) {
+        Xeger generator = new Xeger(column.getFormat());
         if (column.getFormat() == null || column.getFormat().isBlank()) {
             throw new IllegalArgumentException("format is not valid " + column.getFormat());
         }
-        return faker.numerify(column.getFormat());
+        return generator.generate();
     }
 
     @Override

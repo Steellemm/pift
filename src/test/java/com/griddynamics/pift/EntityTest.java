@@ -27,8 +27,10 @@ class EntityTest {
 
     @BeforeEach
     void before() {
-        entityManager.create(Department.class);
+        Department department = entityManager.create(Department.class);
         entity = entityManager.create(Entity.class);
+        log.debug(entity.toString());
+        log.debug(department.toString());
     }
 
     @Test
