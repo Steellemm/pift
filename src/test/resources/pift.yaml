@@ -1,20 +1,23 @@
 tables:
   entity:
     foreign-keys:
-      column_name1: table_name2
+      department: department
     columns:
-      column_name2:
+      timestamp:
         type: DATE
-        format: 'yyyy-mm-dd'
         condition:
           max: 'current'
-          min: '1995-12-13'
-      column_name3:
+          min: '2022-01-29 13:11:58.782197'
+      date:
+        type: DATE
+        condition:
+          max: 'current'
+          min: '12-13-2021'
+      name:
         type: STRING
-        format: '####-####-####'
+        format: '....-....-....'
       age:
         type: NUMBER
-        format: '##.###'
         condition:
           max: 10
           min: 0

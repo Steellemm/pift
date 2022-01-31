@@ -45,9 +45,24 @@ public class Entity extends SuperEntity{
     @Column
     private BigDecimal count;
 
-    @OneToOne(cascade = CascadeType.ALL)
-    @JoinColumn(name = "dept_id", referencedColumnName = "id")
-    private Department department;
+//    @OneToOne(cascade = CascadeType.ALL)
+//    @JoinColumn(name = "dept_id", referencedColumnName = "id")
+    private Long department;
 
+    @Override
+    public String toString() {
+        return "Entity{" +
+                "id=" + id +
+                ", number=" + number +
+                ", name='" + name + '\'' +
+                ", age=" + age +
+                ", date=" + date +
+                ", timestamp=" + timestamp +
+                ", localDate=" + localDate +
+                ", localDateTime=" + localDateTime +
+                ", count=" + count +
+                ", department=" + department +
+                '}';
+    }
 }
 

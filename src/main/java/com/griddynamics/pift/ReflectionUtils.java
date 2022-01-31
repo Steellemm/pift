@@ -99,4 +99,12 @@ public class ReflectionUtils {
             throw new IllegalArgumentException("Exception in createInstance method", e);
         }
     }
+
+    public static <T> T createInstance(Class<T> type, Long arg) {
+        try {
+            return type.getConstructor(Long.TYPE).newInstance(arg);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Exception in createInstance method", e);
+        }
+    }
 }

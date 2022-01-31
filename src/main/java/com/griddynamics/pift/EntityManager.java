@@ -52,7 +52,7 @@ public class EntityManager {
         T object = ReflectionUtils.createInstance(type);
         createdEntitiesList.add(object);
         try {
-            setFields(type, object, createdEntitiesList);
+            setFields(type, object);
         } catch (Exception e) {
             throw new IllegalArgumentException("Exception in create method", e);
         }
@@ -64,16 +64,41 @@ public class EntityManager {
      *
      * @param object which field needs to set.
      */
-    private void setFields(Class<?> type, Object object, List<Object> createdEntitiesList) {
+    private void setFields(Class<?> type, Object object) {
         do {
             Arrays.stream(type.getDeclaredFields()).filter(field -> ReflectionUtils.checkIfFieldFilled(field, object))
-                    .forEach(field -> setFieldRandom(object, field, createdEntitiesList));
+                    .forEach(field -> setFieldRandom(object, field));
             type = type.getSuperclass();
         } while (type != Object.class);
     }
 
-    private void setFieldRandom(Object obj, Field field, List<Object> createdEntitiesList) {
-        ReflectionUtils.setFieldValue(obj, field, fieldCreatorManager.createValue(field, createdEntitiesList));
+    private void setFieldRandom(Object obj, Field field) {
+
+        if (fieldCreatorManager.existInProperties(field)) {
+            if (fieldCreatorManager.getForeignKeyTableName(field).isPresent()) {
+                Object fkObject = getFkObjectFromCreatedEntitiesList(field);
+                ReflectionUtils.setFieldValue(obj, field, ReflectionUtils.getFieldValue(SQLUtils.getIdField(fkObject), fkObject));
+            } else {
+                ReflectionUtils.setFieldValue(obj, field, fieldCreatorManager.createValue(field));
+            }
+        } else {
+            if (!fieldCreatorManager.containsInFieldsMapping(field.getType())) {
+                ReflectionUtils.setFieldValue(obj, field, createdEntitiesList.stream()
+                        .filter(x -> x.getClass().isAssignableFrom(field.getType()))
+                        .findFirst()
+                        .orElseThrow(() -> new IllegalCallerException(
+                                "Trying to set object that has not been created yet")));
+            } else {
+                ReflectionUtils.setFieldValue(obj, field, fieldCreatorManager.createValue(field));
+            }
+        }
+    }
+
+    private Object getFkObjectFromCreatedEntitiesList(Field field){
+        return createdEntitiesList.stream()
+                .filter(entity -> ReflectionUtils.getTableName(entity.getClass())
+                        .equals(fieldCreatorManager.getForeignKeyTableName(field).orElse("")))
+                .findFirst().orElseThrow(() -> new IllegalArgumentException("FK object has not been created yet"));
     }
 
     /**

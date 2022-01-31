@@ -5,10 +5,11 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.github.javafaker.Faker;
 import com.griddynamics.pift.creator.CreatorFunction;
 import com.griddynamics.pift.creator.FieldCreator;
-import com.griddynamics.pift.creator.StringFieldCreator;
 import com.griddynamics.pift.model.Column;
 import com.griddynamics.pift.model.FieldType;
 import com.griddynamics.pift.model.PiftProperties;
+import lombok.extern.slf4j.Slf4j;
+import org.reflections.Reflections;
 
 import java.io.File;
 import java.io.IOException;
@@ -20,22 +21,20 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Function;
 
+import static org.reflections.scanners.Scanners.SubTypes;
+
+@Slf4j
 public class FieldCreatorManager {
     private static final Faker faker = new Faker();
     private static final ObjectMapper MAPPER = new ObjectMapper(new YAMLFactory());
     private final Map<Field, CreatorFunction> userCreatorByField = new HashMap<>();
     private final PiftProperties piftProperties;
-
-    //TODO
-    private final Map<FieldType, FieldCreator> fieldCreatorMap = Map.of(
-            FieldType.STRING, new StringFieldCreator()
-    );
+    private final Reflections reflections = new Reflections("com.griddynamics.pift.creator");
+    private final Set<Class<?>> fieldCreatorInheritorsSet = reflections.get(SubTypes.of(FieldCreator.class).asClass());
+    private final Map<FieldType, FieldCreator> fieldCreatorMap = new HashMap<>();
 
     /**
      * Map for autogenerate random values,
@@ -55,49 +54,31 @@ public class FieldCreatorManager {
 
     public FieldCreatorManager() {
         try {
-            piftProperties = MAPPER.readValue(new File("pift.yaml"), PiftProperties.class);
+            fillFieldCreatorMap();
+            piftProperties = MAPPER.readValue(new File("src/test/resources/pift.yaml"), PiftProperties.class);
         } catch (IOException e) {
             throw new IllegalArgumentException("Exception in getYaml method", e);
         }
     }
 
-    public Object createValue(Field field, List<Object> createdEntitiesList) {
+    public Object createValue(Field field) {
         if (userCreatorByField.containsKey(field)) {
             return userCreatorByField.get(field).apply(field);
         }
-        if (getFromProperties(field).isPresent()) {
-            if (existInForeignKeys(field).isPresent()){
-                return createdEntitiesList.stream()
-                        .filter(obj -> ReflectionUtils.getTableName(obj.getClass())
-                                .equals(existInForeignKeys(field).orElse("")))
-                        .findFirst().orElseThrow(() -> new IllegalArgumentException("FK object has not been created yet"));
-            }
+        if (existInProperties(field)) {
             return fieldCreatorMap.get(getFromProperties(field).get().getType())
                     .createValue(field, getFromProperties(field).get());
         }
         return fieldsMapping.get(field.getType()).apply(field);
     }
 
-    private Optional<Column> getFromProperties(Field field) {
-        if (existInProperties(field)) {
-            return Optional.ofNullable(piftProperties.getTables().get(ReflectionUtils.getTableName(field))
-                    .getColumns().get(SQLUtils.getColumnName(field)));
-        }
-        return Optional.empty();
-    }
-
-    private boolean existInProperties(Field field) {
-        return piftProperties.getTables().containsKey(ReflectionUtils.getTableName(field))
-                && piftProperties.getTables().get(ReflectionUtils.getTableName(field))
-                .getColumns().containsKey(SQLUtils.getColumnName(field));
-    }
-
-    private Optional<String> existInForeignKeys(Field field) {
-        if (piftProperties.getTables().containsKey(ReflectionUtils.getTableName(field))
-                && piftProperties.getTables().get(ReflectionUtils.getTableName(field))
-                .getForeignKeys().containsKey(SQLUtils.getColumnName(field))) {
-            return Optional.ofNullable(piftProperties.getTables().get(ReflectionUtils.getTableName(field))
-                    .getForeignKeys().get(SQLUtils.getColumnName(field)));
+    public Optional<String> getForeignKeyTableName(Field field) {
+        String tableName = ReflectionUtils.getTableName(field);
+        String columnName = SQLUtils.getColumnName(field);
+        if (piftProperties.getTables().containsKey(tableName) && piftProperties.getTables().get(tableName)
+                .getForeignKeys().containsKey(columnName)) {
+            return Optional.ofNullable(piftProperties.getTables().get(tableName)
+                    .getForeignKeys().get(columnName));
         }
         return Optional.empty();
     }
@@ -110,7 +91,32 @@ public class FieldCreatorManager {
         userCreatorByField.put(field, creatorFunction);
     }
 
-    public boolean contains(Class<?> type) {
+
+    public boolean containsInFieldsMapping(Class<?> type) {
         return fieldsMapping.containsKey(type);
+    }
+
+    private Optional<Column> getFromProperties(Field field) {
+        if (existInProperties(field)) {
+            return Optional.ofNullable(piftProperties.getTables().get(ReflectionUtils.getTableName(field))
+                    .getColumns().get(SQLUtils.getColumnName(field)));
+        }
+        return Optional.empty();
+    }
+
+    public boolean existInProperties(Field field) {
+        String tableName = ReflectionUtils.getTableName(field);
+        String columnName = SQLUtils.getColumnName(field);
+        return piftProperties.getTables().containsKey(tableName)
+                && (piftProperties.getTables().get(tableName)
+                .getColumns().containsKey(columnName)
+                || piftProperties.getTables().get(tableName).getForeignKeys().containsKey(columnName));
+    }
+
+    private void fillFieldCreatorMap(){
+        fieldCreatorInheritorsSet.forEach(clazz -> {
+            FieldCreator instance = (FieldCreator) ReflectionUtils.createInstance(clazz);
+            fieldCreatorMap.put(instance.getFieldType(), instance);
+        });
     }
 }
