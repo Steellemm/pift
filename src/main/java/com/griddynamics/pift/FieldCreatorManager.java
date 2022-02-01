@@ -17,12 +17,11 @@ import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.sql.Date;
 import java.sql.Timestamp;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
+import java.time.*;
 import java.util.*;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.reflections.scanners.Scanners.SubTypes;
 
@@ -33,28 +32,30 @@ public class FieldCreatorManager {
     private final Map<Field, CreatorFunction> userCreatorByField = new HashMap<>();
     private final PiftProperties piftProperties;
     private final Reflections reflections = new Reflections("com.griddynamics.pift.creator");
-    private final Set<Class<?>> fieldCreatorInheritorsSet = reflections.get(SubTypes.of(FieldCreator.class).asClass());
-    private final Map<FieldType, FieldCreator> fieldCreatorMap = new HashMap<>();
+
+    private final Map<FieldType, FieldCreator> fieldCreatorMap = reflections.get(SubTypes.of(FieldCreator.class).asClass())
+            .stream().map(x -> (FieldCreator) ReflectionUtils.createInstance(x))
+            .collect(Collectors.toMap(FieldCreator::getFieldType, x -> x));
 
     /**
      * Map for autogenerate random values,
      * where key - class of field type
      * value - lambda that generates value for this type
      */
-    private final Map<Class<?>, Function<Field, Object>> fieldsMapping = Map.of(
-            Long.class, field -> faker.number().randomNumber(),
-            String.class, field -> faker.animal().name(),
-            Integer.class, field -> faker.number().numberBetween(Integer.MIN_VALUE, Integer.MAX_VALUE),
-            BigDecimal.class, field -> new BigDecimal(faker.number().randomNumber()),
-            java.sql.Date.class, field -> new Date(faker.date().birthday().getTime()),
-            java.sql.Timestamp.class, field -> Timestamp.from(Instant.now()),
-            LocalDate.class, field -> faker.date().birthday().toInstant().atZone(ZoneId.of("Europe/Moscow")).toLocalDate(),
-            LocalDateTime.class, field -> LocalDateTime.ofInstant(Instant.now(), ZoneId.of("Europe/Moscow"))
-    );
+    private final static Map<Class<?>, Function<Field, Object>> fieldsMapping = Stream.of(new Object[][]{
+                    {Long.class, (Function<Field, Object>) field -> faker.number().randomNumber()},
+                    {String.class, (Function<Field, Object>) field -> faker.animal().name()},
+                    {Integer.class, (Function<Field, Object>) field -> faker.number().numberBetween(Integer.MIN_VALUE, Integer.MAX_VALUE)},
+                    {BigDecimal.class, (Function<Field, Object>) field -> new BigDecimal(faker.number().randomNumber())},
+                    {java.sql.Date.class, (Function<Field, Object>) field -> new Date(faker.date().birthday().getTime())},
+                    {Timestamp.class, (Function<Field, Object>) field -> Timestamp.from(Instant.now())},
+                    {LocalDate.class, (Function<Field, Object>) field -> faker.date().birthday().toInstant().atZone(ZoneId.of("Europe/Moscow")).toLocalDate()},
+                    {LocalDateTime.class, (Function<Field, Object>) field -> LocalDateTime.ofInstant(Instant.now(), ZoneId.of("Europe/London"))},
+            }
+    ).collect(Collectors.toMap(data -> (Class<?>) data[0], data -> (Function<Field, Object>) data[1]));
 
     public FieldCreatorManager() {
         try {
-            fillFieldCreatorMap();
             piftProperties = MAPPER.readValue(new File("src/test/resources/pift.yaml"), PiftProperties.class);
         } catch (IOException e) {
             throw new IllegalArgumentException("Exception in getYaml method", e);
@@ -111,12 +112,5 @@ public class FieldCreatorManager {
                 && (piftProperties.getTables().get(tableName)
                 .getColumns().containsKey(columnName)
                 || piftProperties.getTables().get(tableName).getForeignKeys().containsKey(columnName));
-    }
-
-    private void fillFieldCreatorMap(){
-        fieldCreatorInheritorsSet.forEach(clazz -> {
-            FieldCreator instance = (FieldCreator) ReflectionUtils.createInstance(clazz);
-            fieldCreatorMap.put(instance.getFieldType(), instance);
-        });
     }
 }

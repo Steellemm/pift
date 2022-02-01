@@ -110,7 +110,6 @@ public class EntityManager {
     }
 
     private void setFieldRandom(Object obj, Field field) {
-
         if (fieldCreatorManager.existInProperties(field)) {
             if (fieldCreatorManager.getForeignKeyTableName(field).isPresent()) {
                 Object fkObject = getFkObjectFromCreatedEntitiesList(field);
@@ -123,7 +122,7 @@ public class EntityManager {
                 ReflectionUtils.setFieldValue(obj, field, createdEntitiesList.stream()
                         .filter(x -> x.getClass().isAssignableFrom(field.getType()))
                         .findFirst()
-                        .orElseThrow(() -> new IllegalCallerException(
+                        .orElseThrow(() -> new IllegalArgumentException(
                                 "Trying to set object that has not been created yet")));
             } else {
                 ReflectionUtils.setFieldValue(obj, field, fieldCreatorManager.createValue(field));
