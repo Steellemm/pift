@@ -6,6 +6,7 @@ import com.griddynamics.pift.Entities.Entity;
 import com.griddynamics.pift.model.Column;
 import com.griddynamics.pift.model.FieldType;
 import com.griddynamics.pift.model.PiftProperties;
+import lombok.SneakyThrows;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -15,19 +16,15 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class StringFieldCreatorTest {
     ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
-    PiftProperties piftProperties;
     StringFieldCreator stringFieldCreator = new StringFieldCreator();
 
     @Test
+    @SneakyThrows
     void createValue() {
-        try {
-            piftProperties = mapper.readValue(new File("src/test/resources/pift.yaml"), PiftProperties.class);
-            Column column = piftProperties.getTables().get("entity").getColumns().get("name");
-            String name = (String) stringFieldCreator.createValue(Entity.class.getDeclaredField("name"), column);
-            Assertions.assertFalse(name.isEmpty());
-        } catch (Exception e) {
-            throw new IllegalArgumentException("Exception in createValue test method", e);
-        }
+        PiftProperties piftProperties = mapper.readValue(new File("src/test/resources/pift.yaml"), PiftProperties.class);
+        Column column = piftProperties.getTables().get("entity").getColumns().get("name");
+        String name = (String) stringFieldCreator.createValue(Entity.class.getDeclaredField("name"), column);
+        Assertions.assertFalse(name.isEmpty());
     }
 
     @Test
