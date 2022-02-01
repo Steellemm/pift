@@ -57,8 +57,8 @@ public class FieldCreatorManager {
     public FieldCreatorManager() {
         try {
             piftProperties = MAPPER.readValue(new File("src/test/resources/pift.yaml"), PiftProperties.class);
-        } catch (IOException e) {
-            throw new IllegalArgumentException("Exception in getYaml method", e);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Exception in FieldCreatorManager constructor", e);
         }
     }
 
@@ -95,6 +95,10 @@ public class FieldCreatorManager {
 
     public boolean containsInFieldsMapping(Class<?> type) {
         return fieldsMapping.containsKey(type);
+    }
+
+    public boolean containsInUserCreatorByField(Field field) {
+        return userCreatorByField.containsKey(field);
     }
 
     private Optional<Column> getFromProperties(Field field) {
