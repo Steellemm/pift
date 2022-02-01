@@ -11,15 +11,14 @@ import javax.persistence.Version;
 import java.lang.reflect.Field;
 import java.time.temporal.Temporal;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j
 @UtilityClass
 public class SQLUtils {
 
-    private static final Set<Class<?>> exclusionAnnotationSet = Set.of(
-            JoinColumn.class,
-            Id.class,
-            Version.class
+    private static final Set<Class<?>> exclusionAnnotationSet = new HashSet<>(
+            Arrays.asList(JoinColumn.class, Id.class, Version.class)
     );
 
     /**
@@ -100,7 +99,7 @@ public class SQLUtils {
             return field.getAnnotation(JoinColumn.class).name();
         }
         if (field.isAnnotationPresent(Column.class) &&
-                !field.getAnnotation(Column.class).name().isBlank()) {
+                !field.getAnnotation(Column.class).name().isEmpty()) {
             return field.getAnnotation(Column.class).name();
         }
         return field.getName();
@@ -127,22 +126,11 @@ public class SQLUtils {
                 .findFirst().orElseThrow(() -> new IllegalArgumentException("Exception in getIdField method"));
     }
 
-    /**
-     * Gets id field from object reference field.
-     *
-     * @param field that references another object.
-     * @return id field
-     */
-    private static Field getIdField(Object entity, Field field) {
-        return Arrays.stream(ReflectionUtils.getFieldValue(field, entity).getClass()
-                        .getDeclaredFields()).filter(x -> x.isAnnotationPresent(Id.class))
-                .findFirst().orElseThrow(() -> new IllegalArgumentException("Exception in getIdField method"));
-    }
 
     private static String getQueryCondition(Object entity) {
         StringBuilder res = new StringBuilder();
         getNotNullColumnFields(entity).forEach(field -> {
-            if (!res.isEmpty()) {
+            if (res.length() != 0) {
                 res.append(" AND ");
             }
             res.append(field.getName());
@@ -153,8 +141,8 @@ public class SQLUtils {
 
     private static List<Field> getNotNullColumnFields(Object entity) {
         return Arrays.stream(entity.getClass().getDeclaredFields())
-                .filter(field -> Collections.disjoint(exclusionAnnotationSet, Set.of(field.getAnnotations())))
+                .filter(field -> Collections.disjoint(exclusionAnnotationSet, new HashSet<>(Arrays.asList(field.getAnnotations()))))
                 .filter(field -> ReflectionUtils.getFieldValue(field, entity) != null)
-                .toList();
+                .collect(Collectors.toList());
     }
 }

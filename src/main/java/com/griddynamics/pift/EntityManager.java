@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.lang.reflect.Field;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.*;
 
@@ -30,7 +31,7 @@ public class EntityManager {
 
     public <T> List<T> getList(T entity) {
         Class<T> type = (Class<T>) entity.getClass();
-        EntityUtils.checkOnTable(type);
+        ReflectionUtils.checkOnTable(type);
         String queryForSelect = SQLUtils.createQueryForSelect(entity);
         List<T> entityList = new ArrayList<>();
         try (Connection con = DriverManager.getConnection(url, user, password);
@@ -38,7 +39,7 @@ public class EntityManager {
              ResultSet rs = stmt.executeQuery(queryForSelect)
         ) {
             while (rs.next()) {
-                entityList.add(EntityUtils.getEntityFromResultSet(type, rs));
+                entityList.add(ReflectionUtils.getEntityFromResultSet(type, rs));
             }
             return entityList;
         } catch (Exception e) {
@@ -47,7 +48,7 @@ public class EntityManager {
     }
 
     public <T> Optional<T> getById(Class<T> type, Object id) {
-        EntityUtils.checkOnTable(type);
+        ReflectionUtils.checkOnTable(type);
         String query = SQLUtils.createQueryForSelectById(type, id);
         log.debug(query);
         try (Connection con = DriverManager.getConnection(url, user, password);
@@ -56,7 +57,7 @@ public class EntityManager {
         ) {
             if (rs.isBeforeFirst()) {
                 rs.next();
-                return Optional.of(EntityUtils.getEntityFromResultSet(type, rs));
+                return Optional.of(ReflectionUtils.getEntityFromResultSet(type, rs));
             } else {
                 return Optional.empty();
             }
@@ -146,7 +147,7 @@ public class EntityManager {
 
     private void executeQuery(String query) {
         log.debug(query);
-        try (Connection con = DriverManager.getConnection(URL, USER, PASSWORD);
+        try (Connection con = DriverManager.getConnection(url, user, password);
              Statement stmt = con.createStatement()) {
             stmt.executeUpdate(query);
         } catch (Exception e) {
@@ -162,5 +163,7 @@ public class EntityManager {
         }
         return entityClassName;
     }
+
+
 
 }
