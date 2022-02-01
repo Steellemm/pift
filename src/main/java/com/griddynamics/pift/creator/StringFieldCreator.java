@@ -14,7 +14,7 @@ public class StringFieldCreator implements FieldCreator {
     @Override
     public Object createValue(Field field, Column column) {
         Xeger generator = new Xeger(column.getFormat());
-        if (column.getFormat() == null || column.getFormat().isBlank()) {
+        if (column.getFormat() == null || column.getFormat().isEmpty()) {
             throw new IllegalArgumentException("format is not valid " + column.getFormat());
         }
         return generator.generate();

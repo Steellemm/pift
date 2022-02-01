@@ -2,14 +2,27 @@ package com.griddynamics.pift;
 
 
 import lombok.experimental.UtilityClass;
+import org.apache.commons.lang3.reflect.FieldUtils;
 
 import javax.persistence.*;
 import java.lang.reflect.Field;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.Arrays;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @UtilityClass
 public class ReflectionUtils {
+
+    private final static Map<Class<?>, Function<Long, Object>> longToDateConverterMap = Stream.of(new Object[][]{
+                    {LocalDate.class, (Function<Long, Object>) LocalDate::ofEpochDay},
+                    {LocalDateTime.class, (Function<Long, Object>) epochSecond -> LocalDateTime.ofEpochSecond(epochSecond, 0, ZoneOffset.UTC)},
+            }
+    ).collect(Collectors.toMap(data -> (Class<?>) data[0], data -> (Function<Long, Object>) data[1]));
 
     /**
      * Checks if received field is filled in the object.
@@ -28,7 +41,7 @@ public class ReflectionUtils {
      */
     public static String getTableName(Class<?> type) {
         if (type.isAnnotationPresent(Table.class) &&
-                !type.getAnnotation(Table.class).name().isBlank()) {
+                !type.getAnnotation(Table.class).name().isEmpty()) {
             return type.getAnnotation(Table.class).name();
         }
         return type.getSimpleName();
@@ -56,14 +69,10 @@ public class ReflectionUtils {
      * @return Object field value.
      */
     public static Object getFieldValue(Field field, Object object){
-        boolean accessStatus = field.canAccess(object);
         try {
-            field.setAccessible(true);
-            return field.get(object);
+            return FieldUtils.readField(object, field.getName(), true);
         } catch (Exception e) {
             throw new IllegalArgumentException("Exception in setField method", e);
-        } finally {
-            field.setAccessible(accessStatus);
         }
     }
 
@@ -75,14 +84,10 @@ public class ReflectionUtils {
      * @param value to be set in field.
      */
     public static void setFieldValue(Object obj, Field field, Object value) {
-        boolean accessStatus = field.canAccess(obj);
         try {
-            field.setAccessible(true);
-            field.set(obj, value);
+            FieldUtils.writeField(field, obj, value, true);
         } catch (Exception e) {
             throw new IllegalArgumentException("Exception in setField method", e);
-        } finally {
-            field.setAccessible(accessStatus);
         }
     }
 
@@ -100,11 +105,15 @@ public class ReflectionUtils {
         }
     }
 
-    public static <T> T createInstance(Class<T> type, Long arg) {
+    public static <T> T createInstance(Class<T> type, Long msec) {
         try {
-            return type.getConstructor(Long.TYPE).newInstance(arg);
+            if (longToDateConverterMap.containsKey(type)){
+                return (T) longToDateConverterMap.get(type).apply(msec);
+            }
+            return type.getConstructor(Long.TYPE).newInstance(msec);
         } catch (Exception e) {
             throw new IllegalArgumentException("Exception in createInstance method", e);
         }
     }
+
 }

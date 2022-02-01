@@ -9,53 +9,74 @@ import lombok.extern.slf4j.Slf4j;
 import java.lang.reflect.Field;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
+import java.time.*;
 import java.util.Date;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Slf4j
 public class DateFieldCreator implements FieldCreator {
     private final Faker faker = new Faker();
 
-    private final Map<Class<?>, String> dateFormatMap = Map.of(
-            Timestamp.class, "yyyy-MM-dd HH:mm:ss",
-            java.sql.Date.class, "MM-dd-yyyy"
-    );
+    private final Map<Class<?>, Function<String, Long>> dateToLongConverterMap = Stream.of(new Object[][]{
+                    {LocalDate.class, (Function<String, Long>) date -> LocalDate.parse(date).toEpochDay()},
+                    {LocalDateTime.class, (Function<String, Long>) date -> LocalDateTime.parse(date).toEpochSecond(ZoneOffset.UTC)},
+                    {Timestamp.class, (Function<String, Long>) date -> {
+                        try {
+                            return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(date).getTime();
+                        } catch (Exception e) {
+                            throw new IllegalArgumentException("Exception in dateToLongConverterMap", e);
+                        }
+                    }},
+                    {java.sql.Date.class, (Function<String, Long>) date -> {
+                        try {
+                            return new SimpleDateFormat("MM-dd-yyyy").parse(date).getTime();
+                        } catch (Exception e) {
+                            throw new IllegalArgumentException("Exception in dateToLongConverterMap", e);
+                        }
+                    }},
+            }
+    ).collect(Collectors.toMap(data -> (Class<?>) data[0], data -> (Function<String, Long>) data[1]));
 
-    private final Map<Class<?>, Function<Column, Object>> fieldsMapping = Map.of(
-            java.sql.Date.class, column -> {
-                if (column.getCondition() != null) {
-                    return new java.sql.Date(faker.date().between((Date) getMin(column, java.sql.Date.class), (Date)getMax(column, java.sql.Date.class)).getTime());
-                }
-                return new java.sql.Date(faker.date().birthday().getTime());
-            },
-            java.sql.Timestamp.class, column -> {
-                if (column.getCondition() != null) {
-                    log.debug(getMax(column, Timestamp.class).toString());
-                    log.debug(getMin(column, Timestamp.class).toString());
-                    long offset = ((Timestamp) getMin(column, Timestamp.class)).getTime();
-                    log.debug("offset " + offset);
-                    long end = ((Timestamp)getMax(column, Timestamp.class)).getTime();
-                    log.debug("end " + end);
-                    long diff = end - offset + 1;
-                    log.debug("diff " + diff);
-
-                    return new Timestamp(offset + (long)(Math.random() * diff));
-                }
-                return Timestamp.from(faker.date().birthday().toInstant());
-//            },
-//            LocalDate.class, column -> {
-//                if (column.getCondition() != null) {
-//                    return LocalDate.from(faker.date().between(getMin(column, LocalDate.class), getMax(column, LocalDate.class)).toInstant());
-//                }
-//                return LocalDate.from(faker.date().birthday().toInstant());
-//            },
-//            LocalDateTime.class, column -> {
-//                if (column.getCondition() != null) {
-//                    return LocalDateTime.ofInstant(faker.date().between(getMin(column, LocalDateTime.class), getMax(column, LocalDateTime.class)).toInstant(), ZoneId.of("Europe/London"));
-//                }
-//                return LocalDateTime.ofInstant(faker.date().birthday().toInstant(), ZoneId.of("Europe/London"));
-            });
+    private final Map<Class<?>, Function<Column, Object>> fieldsMapping = Stream.of(new Object[][]{
+                    {LocalDate.class, (Function<Column, Object>) column -> {
+                        if (column.getCondition() != null) {
+                            long offset = ((LocalDate) getMin(column, LocalDate.class)).atStartOfDay(ZoneOffset.UTC).toEpochSecond();
+                            long end = ((LocalDate) getMax(column, LocalDate.class)).atStartOfDay(ZoneOffset.UTC).toEpochSecond();
+                            long diff = end - offset + 1;
+                            return Instant.ofEpochSecond(offset + (long) (Math.random() * diff)).atZone(ZoneOffset.UTC).toLocalDate();
+                        }
+                        return LocalDate.from(faker.date().birthday().toInstant());
+                    }},
+                    {LocalDateTime.class, (Function<Column, Object>) column -> {
+                        if (column.getCondition() != null) {
+                            long offset = ((LocalDateTime) getMin(column, LocalDateTime.class)).toInstant(ZoneOffset.UTC).getEpochSecond();
+                            long end = ((LocalDateTime) getMax(column, LocalDateTime.class)).toInstant(ZoneOffset.UTC).getEpochSecond();
+                            long diff = end - offset + 1;
+                            return LocalDateTime.ofEpochSecond(offset + (long) (Math.random() * diff), 0, ZoneOffset.UTC);
+                        }
+                        return LocalDateTime.ofInstant(faker.date().birthday().toInstant(), ZoneId.of("Europe/London"));
+                    }},
+                    {Timestamp.class, (Function<Column, Object>) column -> {
+                        if (column.getCondition() != null) {
+                            long offset = ((Timestamp) getMin(column, Timestamp.class)).getTime();
+                            long end = ((Timestamp) getMax(column, Timestamp.class)).getTime();
+                            long diff = end - offset + 1;
+                            return new Timestamp(offset + (long) (Math.random() * diff));
+                        }
+                        return Timestamp.from(faker.date().birthday().toInstant());
+                    }},
+                    {java.sql.Date.class, (Function<Column, Object>) column -> {
+                        if (column.getCondition() != null) {
+                            return new java.sql.Date(faker.date().between((Date) getMin(column, java.sql.Date.class), (Date) getMax(column, java.sql.Date.class)).getTime());
+                        }
+                        return new java.sql.Date(faker.date().birthday().getTime());
+                    }},
+            }
+    ).collect(Collectors.toMap(data -> (Class<?>) data[0], data -> (Function<Column, Object>) data[1]));
 
     @Override
     public Object createValue(Field field, Column column) {
@@ -76,16 +97,14 @@ public class DateFieldCreator implements FieldCreator {
     }
 
     private Object getDate(Class<?> type, String date) {
-        try {
-            if (date.equals("current")) {
-                return ReflectionUtils.createInstance(type, System.currentTimeMillis());
+        if (date.equals("current")) {
+            if (type.isAssignableFrom(LocalDateTime.class)) {
+                return ReflectionUtils.createInstance(type, Instant.now().getEpochSecond());
+            } else if (type.isAssignableFrom(LocalDate.class)) {
+                return ReflectionUtils.createInstance(type, TimeUnit.MILLISECONDS.toDays(Instant.now().toEpochMilli()));
             }
-            SimpleDateFormat smp = new SimpleDateFormat(dateFormatMap.get(type));
-            return ReflectionUtils.createInstance(type, smp.parse(date).getTime());
-        } catch (Exception e) {
-            throw new IllegalArgumentException("Exception in getMin method", e);
+            return ReflectionUtils.createInstance(type, System.currentTimeMillis());
         }
+        return ReflectionUtils.createInstance(type, dateToLongConverterMap.get(type).apply(date));
     }
-
-
 }
