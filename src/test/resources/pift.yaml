@@ -1,0 +1,33 @@
+tables:
+  entity:
+    foreign-keys:
+      department: department
+    columns:
+      timestamp:
+        type: DATE
+        condition:
+          max: 'current'
+          min: '2022-01-29 13:11:58.782197'
+      date:
+        type: DATE
+        condition:
+          max: 'current'
+          min: '12-13-2021'
+      name:
+        type: STRING
+        format: '[0-9][0-9][0-9][0-9]'
+      age:
+        type: NUMBER
+        condition:
+          max: 10
+          min: 0
+      localDateTime:
+        type: DATE
+        condition:
+          max: 'current'
+          min: '2022-01-01T00:51:50.194084700'
+      localDate:
+        type: DATE
+        condition:
+          max: 'current'
+          min: '2022-01-30'

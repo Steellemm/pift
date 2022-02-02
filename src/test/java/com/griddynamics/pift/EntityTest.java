@@ -1,5 +1,6 @@
 package com.griddynamics.pift;
 
+
 import com.griddynamics.pift.Entities.Department;
 import com.griddynamics.pift.Entities.Entity;
 import lombok.extern.slf4j.Slf4j;
@@ -19,8 +20,10 @@ class EntityTest {
 
     @BeforeEach
     void before() {
-        entityManager.create(Department.class);
+        Department department = entityManager.create(Department.class);
         entity = entityManager.create(Entity.class);
+        log.debug(entity.toString());
+        log.debug(department.toString());
     }
 
     @Test

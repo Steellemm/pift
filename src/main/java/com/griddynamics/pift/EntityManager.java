@@ -3,13 +3,12 @@ package com.griddynamics.pift;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-import java.sql.*;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Optional;
-import java.util.Map;
-
+import java.lang.reflect.Field;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.Statement;
+import java.util.*;
 
 
 @Slf4j
@@ -20,6 +19,7 @@ public class EntityManager {
     private final String url;
     private final String user;
     private final String password;
+    private final FieldCreatorManager fieldCreatorManager = new FieldCreatorManager();
 
     /**
      * Pushes the objects from createdEntitiesList into database and then clears the list.
@@ -31,7 +31,7 @@ public class EntityManager {
 
     public <T> List<T> getList(T entity) {
         Class<T> type = (Class<T>) entity.getClass();
-        EntityUtils.checkOnTable(type);
+        ReflectionUtils.checkOnTable(type);
         String queryForSelect = SQLUtils.createQueryForSelect(entity);
         List<T> entityList = new ArrayList<>();
         try (Connection con = DriverManager.getConnection(url, user, password);
@@ -39,7 +39,7 @@ public class EntityManager {
              ResultSet rs = stmt.executeQuery(queryForSelect)
         ) {
             while (rs.next()) {
-                entityList.add(EntityUtils.getEntityFromResultSet(type, rs));
+                entityList.add(ReflectionUtils.getEntityFromResultSet(type, rs));
             }
             return entityList;
         } catch (Exception e) {
@@ -48,7 +48,7 @@ public class EntityManager {
     }
 
     public <T> Optional<T> getById(Class<T> type, Object id) {
-        EntityUtils.checkOnTable(type);
+        ReflectionUtils.checkOnTable(type);
         String query = SQLUtils.createQueryForSelectById(type, id);
         log.debug(query);
         try (Connection con = DriverManager.getConnection(url, user, password);
@@ -57,7 +57,7 @@ public class EntityManager {
         ) {
             if (rs.isBeforeFirst()) {
                 rs.next();
-                return Optional.of(EntityUtils.getEntityFromResultSet(type, rs));
+                return Optional.of(ReflectionUtils.getEntityFromResultSet(type, rs));
             } else {
                 return Optional.empty();
             }
@@ -78,9 +78,64 @@ public class EntityManager {
 
     public <T> T create(Class<T> type, String entityId) {
         log.debug(createdEntitiesMap.keySet().toString());
-        T object = EntityUtils.create(type, createdEntitiesList);
+        T object = createFilledObject(type);
         createdEntitiesMap.put(getEntityClassName(entityId), object);
         return object;
+    }
+
+    /**
+     * Creates new instance of type parameter and add it in createdEntitiesList.
+     */
+    private <T> T createFilledObject(Class<T> type) {
+        T object = ReflectionUtils.createInstance(type);
+        createdEntitiesList.add(object);
+        try {
+            setFields(type, object);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Exception in create method", e);
+        }
+        return object;
+    }
+
+    /**
+     * Sets fields in object and his superclasses.
+     *
+     * @param object which field needs to set.
+     */
+    private void setFields(Class<?> type, Object object) {
+        do {
+            Arrays.stream(type.getDeclaredFields()).filter(field -> ReflectionUtils.checkIfFieldFilled(field, object))
+                    .forEach(field -> setFieldRandom(object, field));
+            type = type.getSuperclass();
+        } while (type != Object.class);
+    }
+
+    private void setFieldRandom(Object obj, Field field) {
+        if (fieldCreatorManager.existInProperties(field)) {
+            if (fieldCreatorManager.getForeignKeyTableName(field).isPresent()) {
+                Object fkObject = getFkObjectFromCreatedEntitiesList(field);
+                ReflectionUtils.setFieldValue(obj, field, ReflectionUtils.getFieldValue(SQLUtils.getIdField(fkObject), fkObject));
+            } else {
+                ReflectionUtils.setFieldValue(obj, field, fieldCreatorManager.createValue(field));
+            }
+        } else {
+            if (!fieldCreatorManager.containsInFieldsMapping(field.getType())) {
+                ReflectionUtils.setFieldValue(obj, field, createdEntitiesList.stream()
+                        .filter(x -> x.getClass().isAssignableFrom(field.getType()))
+                        .findFirst()
+                        .orElseThrow(() -> new IllegalArgumentException(
+                                "Trying to set object that has not been created yet")));
+            } else {
+                ReflectionUtils.setFieldValue(obj, field, fieldCreatorManager.createValue(field));
+            }
+        }
+    }
+
+    private Object getFkObjectFromCreatedEntitiesList(Field field){
+        return createdEntitiesList.stream()
+                .filter(entity -> ReflectionUtils.getTableName(entity.getClass())
+                        .equals(fieldCreatorManager.getForeignKeyTableName(field).orElse("")))
+                .findFirst().orElseThrow(() -> new IllegalArgumentException("FK object has not been created yet"));
     }
 
     /**
@@ -108,5 +163,7 @@ public class EntityManager {
         }
         return entityClassName;
     }
+
+
 
 }
