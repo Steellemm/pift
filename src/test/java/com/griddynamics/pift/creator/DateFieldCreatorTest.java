@@ -27,10 +27,10 @@ class DateFieldCreatorTest {
         piftProperties = mapper.readValue(new File("src/test/resources/pift.yaml"), PiftProperties.class);
         Map<String, Column> column = piftProperties.getTables().get("entity").getColumns();
         Date date = (Date) dateFieldCreator.createValue(Entity.class.getDeclaredField("date"), column.get("date"));
-        Assertions.assertTrue(
-                date.after(new Date(format.parse(column.get("date").getCondition().getMin()).getTime())) &&
-                        date.before(new Date(System.currentTimeMillis()))
-        );
+        Date dateMin = new Date(format.parse(column.get("date").getCondition().getMin()).getTime());
+        Date dateMax = new Date(System.currentTimeMillis());
+        Assertions.assertTrue(date.after(dateMin), "Generated date less than dateMin" + dateMin + " < " + date + " < " + dateMax);
+        Assertions.assertTrue(date.before(dateMax), "Generated date bigger than dateMax" + dateMin + " < " + date + " < " + dateMax);
     }
 
     @Test
