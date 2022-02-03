@@ -39,7 +39,7 @@ public class EntityManager {
              ResultSet rs = stmt.executeQuery(queryForSelect)
         ) {
             while (rs.next()) {
-                entityList.add(ReflectionUtils.getEntityFromResultSet(type, rs));
+                entityList.add(getEntityFromResultSet(type, rs));
             }
             return entityList;
         } catch (Exception e) {
@@ -57,7 +57,7 @@ public class EntityManager {
         ) {
             if (rs.isBeforeFirst()) {
                 rs.next();
-                return Optional.of(ReflectionUtils.getEntityFromResultSet(type, rs));
+                return Optional.of(getEntityFromResultSet(type, rs));
             } else {
                 return Optional.empty();
             }
@@ -164,6 +164,29 @@ public class EntityManager {
         return entityClassName;
     }
 
+    private  <T> T getEntityFromResultSet(Class<T> type, ResultSet resultSet) {
+        T entityInstance = ReflectionUtils.createInstance(type);
+        ReflectionUtils.getColumnFields(type).forEach(field -> setField(entityInstance, resultSet, field));
+        return entityInstance;
+    }
 
+    private void setField(Object entity, ResultSet resultSet, Field field) {
+        try {
+            if (fieldCreatorManager.getForeignKeyTableName(field).isPresent()){
+                Object fkObject = getFkObjectFromCreatedEntitiesList(field);
+                ReflectionUtils.setFieldValue(entity, field, ReflectionUtils.getFieldValue(SQLUtils.getIdField(fkObject), fkObject));
+            }
+            else if (fieldCreatorManager.containsInFieldsMapping(field.getType())) {
+                ReflectionUtils.setFieldValue
+                        (entity, field, resultSet.getObject(SQLUtils.getColumnName(field)));
+            } else {
+                ReflectionUtils.setFieldValue(entity, field,
+                        ReflectionUtils.getEntityWithId(field.getType(), resultSet.getObject(SQLUtils.getColumnName(field))));
+            }
+        } catch (Exception e) {
+            throw new IllegalStateException("Exception in setField method", e);
+        }
+
+    }
 
 }

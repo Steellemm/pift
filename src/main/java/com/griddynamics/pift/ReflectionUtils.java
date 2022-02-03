@@ -120,28 +120,8 @@ public class ReflectionUtils {
         }
     }
 
-    public <T> T getEntityFromResultSet(Class<T> type, ResultSet resultSet) {
-        T entityInstance = ReflectionUtils.createInstance(type);
-        ReflectionUtils.getColumnFields(type).forEach(field -> setField(entityInstance, resultSet, field));
-        return entityInstance;
-    }
 
-    private void setField(Object entity, ResultSet resultSet, Field field) {
-        FieldCreatorManager fieldCreatorManager = new FieldCreatorManager();
-        try {
-            if (fieldCreatorManager.containsInFieldsMapping(field.getType())) {
-                ReflectionUtils.setFieldValue
-                        (entity, field, resultSet.getObject(SQLUtils.getColumnName(field)));
-            } else {
-                ReflectionUtils.setFieldValue(entity, field,
-                        getEntityWithId(field.getType(), resultSet.getObject(SQLUtils.getColumnName(field))));
-            }
-        } catch (Exception e) {
-            throw new IllegalStateException("Exception in setField method", e);
-        }
-
-    }
-    private <T> Object getEntityWithId(Class<T> type, Object id) {
+    public static  <T> Object getEntityWithId(Class<T> type, Object id) {
         Object obj = ReflectionUtils.createInstance(type);
         ReflectionUtils.setFieldValue(obj, SQLUtils.getIdField(type), id);
         return obj;

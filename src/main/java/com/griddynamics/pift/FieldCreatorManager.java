@@ -48,9 +48,9 @@ public class FieldCreatorManager {
                     {Integer.class, (Function<Field, Object>) field -> faker.number().numberBetween(Integer.MIN_VALUE, Integer.MAX_VALUE)},
                     {BigDecimal.class, (Function<Field, Object>) field -> new BigDecimal(faker.number().randomNumber())},
                     {java.sql.Date.class, (Function<Field, Object>) field -> new Date(faker.date().birthday().getTime())},
-                    {Timestamp.class, (Function<Field, Object>) field -> Timestamp.from(Instant.now())},
-                    {LocalDate.class, (Function<Field, Object>) field -> faker.date().birthday().toInstant().atZone(ZoneId.of("Europe/Moscow")).toLocalDate()},
-                    {LocalDateTime.class, (Function<Field, Object>) field -> LocalDateTime.ofInstant(Instant.now(), ZoneId.of("Europe/London"))},
+                    {Timestamp.class, (Function<Field, Object>) field -> Timestamp.from(faker.date().birthday().toInstant())},
+                    {LocalDate.class, (Function<Field, Object>) field -> faker.date().birthday().toInstant().atZone(ZoneId.of("Europe/London")).toLocalDate()},
+                    {LocalDateTime.class, (Function<Field, Object>) field -> LocalDateTime.ofInstant(faker.date().birthday().toInstant(), ZoneId.of("Europe/London"))},
             }
     ).collect(Collectors.toMap(data -> (Class<?>) data[0], data -> (Function<Field, Object>) data[1]));
 
