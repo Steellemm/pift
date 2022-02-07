@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 
 class SQLUtilsTest {
     TestClass testClass = new TestClass("text", 10);
+    FieldCreatorManager fieldCreatorManager = new FieldCreatorManager();
 
     @Test
     void readField() {
@@ -14,7 +15,7 @@ class SQLUtilsTest {
 
     @Test
     void createQueryForInsert() {
-        Assertions.assertNotNull(SQLUtils.createQueryForInsert(testClass));
+        Assertions.assertNotNull(SQLUtils.createQueryForInsert(testClass, fieldCreatorManager));
     }
 
     private static class TestClass{

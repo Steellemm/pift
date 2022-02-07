@@ -4,15 +4,16 @@ import com.griddynamics.pift.Entities.Department;
 import org.junit.jupiter.api.*;
 
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
-
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class EntityManagerTest {
-    EntityManager entityManager = new EntityManager
-            ("jdbc:postgresql://localhost:5432/postgres", "postgres", "postgres");
     String rowCountQuery = "SELECT count(*) from department";
+    EntityManager entityManager;
+
+    @BeforeAll
+    void before() {
+        entityManager = getEntityManager();
+    }
 
     @Test
     void create() {
@@ -24,12 +25,12 @@ class EntityManagerTest {
         entityManager.create(Department.class);
         int expectedRows;
         int actualRows;
-        try (Connection con = DriverManager.getConnection
-                ("jdbc:postgresql://localhost:5432/postgres", "postgres", "postgres");
-             Statement stmt = con.createStatement()) {
+        try (Connection con = DriverManager.getConnection("jdbc:h2:mem:myDb;DB_CLOSE_DELAY=-1", "", "");
+             Statement stmt = con.createStatement())
+        {
             ResultSet rs = stmt.executeQuery(rowCountQuery);
             rs.next();
-            expectedRows = rs.getInt(1) + 1;
+            expectedRows = rs.getInt(1) + 2;
 
             entityManager.flush();
 
@@ -41,5 +42,18 @@ class EntityManagerTest {
         } catch (SQLException e) {
             e.printStackTrace();
         }
+    }
+
+    EntityManager getEntityManager(){
+        try(Connection con = DriverManager.getConnection("jdbc:h2:mem:myDb;DB_CLOSE_DELAY=-1", "", "");
+            Statement stmt = con.createStatement()) {
+            stmt.executeUpdate("CREATE TABLE entity " +
+                    "(id bigint primary key , number bigint, name varchar(50), age int, count decimal, localdatetime timestamp, " +
+                    " date date, timestamp timestamp, localdate date, dept_id bigint); " +
+                    "CREATE TABLE department (id bigint primary key , location varchar(50));");
+        }catch (Exception e){
+            throw new IllegalArgumentException("", e);
+        }
+        return new EntityManager("jdbc:h2:mem:myDb;DB_CLOSE_DELAY=-1", "", "");
     }
 }

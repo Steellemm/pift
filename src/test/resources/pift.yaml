@@ -1,7 +1,9 @@
 tables:
   entity:
     foreign-keys:
-      department: department
+      department:
+        table-name: department
+        column-name: 'dept_id'
     columns:
       timestamp:
         type: DATE

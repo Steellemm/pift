@@ -4,22 +4,23 @@ package com.griddynamics.pift;
 import com.griddynamics.pift.Entities.Department;
 import com.griddynamics.pift.Entities.Entity;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 
 import java.math.BigDecimal;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.Statement;
 import java.util.List;
 
 @Slf4j
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class EntityTest {
     Entity entity;
-    EntityManager entityManager = new EntityManager
-            ("jdbc:postgresql://localhost:5432/postgres", "postgres", "postgres");
+    EntityManager entityManager;
 
-    @BeforeEach
+    @BeforeAll
     void before() {
+        entityManager = getEntityManager();
         Department department = entityManager.create(Department.class);
         entity = entityManager.create(Entity.class);
         log.debug(entity.toString());
@@ -80,5 +81,19 @@ class EntityTest {
     @Test
     void main() {
         entityManager.flush();
+    }
+
+    EntityManager getEntityManager(){
+        try(Connection con = DriverManager.getConnection("jdbc:h2:mem:myDb;DB_CLOSE_DELAY=-1", "", "");
+            Statement stmt = con.createStatement()) {
+            stmt.executeUpdate("CREATE TABLE entity " +
+                    "(id bigint primary key , number bigint, name varchar(50), age int, count decimal, localdatetime timestamp, " +
+                    " date date, timestamp timestamp, localdate date, dept_id bigint); " +
+                    "CREATE TABLE department (id bigint primary key , location varchar(50));");
+            stmt.executeUpdate("INSERT INTO entity (id, number, name, count, dept_id) VALUES (6, 425821, 'snake', 345742, 10)");
+        }catch (Exception e){
+            throw new IllegalArgumentException("", e);
+        }
+        return new EntityManager("jdbc:h2:mem:myDb;DB_CLOSE_DELAY=-1", "", "");
     }
 }

@@ -23,7 +23,7 @@ class FieldCreatorManagerTest {
     @Test
     @SneakyThrows
     void getForeignKeyTableName() {
-        Assertions.assertTrue(fieldCreatorManager.getForeignKeyTableName(Entity.class.getDeclaredField("department")).isPresent());
+        Assertions.assertTrue(fieldCreatorManager.getForeignKey(Entity.class.getDeclaredField("department")).isPresent());
     }
 
     @Test

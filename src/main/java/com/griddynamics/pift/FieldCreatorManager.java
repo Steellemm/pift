@@ -6,6 +6,7 @@ import com.github.javafaker.Faker;
 import com.griddynamics.pift.creator.CreatorFunction;
 import com.griddynamics.pift.creator.FieldCreator;
 import com.griddynamics.pift.model.Column;
+import com.griddynamics.pift.model.FK;
 import com.griddynamics.pift.model.FieldType;
 import com.griddynamics.pift.model.PiftProperties;
 import lombok.extern.slf4j.Slf4j;
@@ -73,7 +74,7 @@ public class FieldCreatorManager {
         return fieldsMapping.get(field.getType()).apply(field);
     }
 
-    public Optional<String> getForeignKeyTableName(Field field) {
+    public Optional<FK> getForeignKey(Field field) {
         String tableName = ReflectionUtils.getTableName(field);
         String columnName = SQLUtils.getColumnName(field);
         if (piftProperties.getTables().containsKey(tableName) && piftProperties.getTables().get(tableName)

@@ -50,7 +50,7 @@ public class SQLUtils {
     /**
      * Creates query for insert data into database.
      */
-    public static String createQueryForInsert(Object entity) {
+    public static String createQueryForInsert(Object entity, FieldCreatorManager fieldCreatorManager) {
         Class<?> type = entity.getClass();
         StringBuilder insertQuery =
                 new StringBuilder("INSERT INTO ")
@@ -63,11 +63,15 @@ public class SQLUtils {
                 insertQuery.append(",").append(" ");
             }
             if (field.isAnnotationPresent(JoinColumn.class)) {
-                values.append(
-                        readField(getIdField(entity, field), ReflectionUtils.getFieldValue(field, entity))
-                );
-            } else values.append(readField(field, entity));
-            insertQuery.append(getColumnName(field));
+                values.append(readField(getIdField(entity, field), ReflectionUtils.getFieldValue(field, entity)));
+            } else {
+                values.append(readField(field, entity));
+            }
+            if (fieldCreatorManager.getForeignKey(field).isPresent()){
+                insertQuery.append(fieldCreatorManager.getForeignKey(field).get().getColumnName());
+            } else {
+                insertQuery.append(getColumnName(field));
+            }
         });
         return insertQuery.append(") values (").append(values).append(")").toString();
     }
@@ -111,6 +115,10 @@ public class SQLUtils {
                 " WHERE " +
                 getColumnName(getIdField(type)) +
                 " = " + convertObjectToString(id);
+    }
+
+    public static String createQueryForSchemaInfo(){
+        return "SELECT table_name, column_name, data_type FROM INFORMATION_SCHEMA.COLUMNS";
     }
 
     private static String convertObjectToString(Object obj){

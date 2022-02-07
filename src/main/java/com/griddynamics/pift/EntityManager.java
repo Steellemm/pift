@@ -4,10 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.lang.reflect.Field;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.ResultSet;
-import java.sql.Statement;
+import java.sql.*;
 import java.util.*;
 
 
@@ -52,6 +49,8 @@ public class EntityManager {
         String query = SQLUtils.createQueryForSelectById(type, id);
         log.debug(query);
         try (Connection con = DriverManager.getConnection(url, user, password);
+             Connection connection = DriverManager.getConnection("jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "", "");
+             Statement stmt1 = connection.createStatement();
              Statement stmt = con.createStatement();
              ResultSet rs = stmt.executeQuery(query)
         ) {
@@ -112,7 +111,7 @@ public class EntityManager {
 
     private void setFieldRandom(Object obj, Field field) {
         if (fieldCreatorManager.existInProperties(field)) {
-            if (fieldCreatorManager.getForeignKeyTableName(field).isPresent()) {
+            if (fieldCreatorManager.getForeignKey(field).isPresent()) {
                 Object fkObject = getFkObjectFromCreatedEntitiesList(field);
                 ReflectionUtils.setFieldValue(obj, field, ReflectionUtils.getFieldValue(SQLUtils.getIdField(fkObject), fkObject));
             } else {
@@ -134,7 +133,9 @@ public class EntityManager {
     private Object getFkObjectFromCreatedEntitiesList(Field field){
         return createdEntitiesList.stream()
                 .filter(entity -> ReflectionUtils.getTableName(entity.getClass())
-                        .equals(fieldCreatorManager.getForeignKeyTableName(field).orElse("")))
+                        .equals(fieldCreatorManager.getForeignKey(field)
+                                .orElseThrow(() -> new IllegalArgumentException("FK doesn't contains in yaml file"))
+                                .getTableName()))
                 .findFirst().orElseThrow(() -> new IllegalArgumentException("FK object has not been created yet"));
     }
 
@@ -142,13 +143,14 @@ public class EntityManager {
      * Saves received object to the database.
      */
     private void saveEntity(Object entity) {
-        executeQuery(SQLUtils.createQueryForInsert(entity));
+        executeQuery(SQLUtils.createQueryForInsert(entity, fieldCreatorManager));
     }
 
     private void executeQuery(String query) {
         log.debug(query);
         try (Connection con = DriverManager.getConnection(url, user, password);
-             Statement stmt = con.createStatement()) {
+             Statement stmt = con.createStatement())
+        {
             stmt.executeUpdate(query);
         } catch (Exception e) {
             throw new IllegalArgumentException("Exception in connect method", e);
@@ -172,7 +174,7 @@ public class EntityManager {
 
     private void setField(Object entity, ResultSet resultSet, Field field) {
         try {
-            if (fieldCreatorManager.getForeignKeyTableName(field).isPresent()){
+            if (fieldCreatorManager.getForeignKey(field).isPresent()){
                 Object fkObject = getFkObjectFromCreatedEntitiesList(field);
                 ReflectionUtils.setFieldValue(entity, field, ReflectionUtils.getFieldValue(SQLUtils.getIdField(fkObject), fkObject));
             }

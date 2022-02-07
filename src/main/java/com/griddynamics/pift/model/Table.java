@@ -11,6 +11,6 @@ public class Table {
     private Map<String, Column> columns;
 
     @JsonProperty("foreign-keys")
-    private Map<String, String> foreignKeys;
+    private Map<String, FK> foreignKeys;
 
 }

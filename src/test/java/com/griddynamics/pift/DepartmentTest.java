@@ -7,8 +7,8 @@ import org.junit.jupiter.api.Test;
 
 class DepartmentTest {
     Department department;
-    EntityManager entityManager = new EntityManager
-            ("jdbc:postgresql://localhost:5432/postgres", "postgres", "postgres");
+    EntityManager entityManager = new EntityManager("jdbc:postgresql://localhost:5432/postgres",
+            "postgres", "22ecgfyjdyfbkm");;
 
     @BeforeEach
     void before(){
