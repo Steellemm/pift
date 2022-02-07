@@ -117,10 +117,6 @@ public class SQLUtils {
                 " = " + convertObjectToString(id);
     }
 
-    public static String createQueryForSchemaInfo(){
-        return "SELECT table_name, column_name, data_type FROM INFORMATION_SCHEMA.COLUMNS";
-    }
-
     private static String convertObjectToString(Object obj){
         if (obj instanceof String) {
             return "'" + obj + "'";

@@ -49,8 +49,6 @@ public class EntityManager {
         String query = SQLUtils.createQueryForSelectById(type, id);
         log.debug(query);
         try (Connection con = DriverManager.getConnection(url, user, password);
-             Connection connection = DriverManager.getConnection("jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "", "");
-             Statement stmt1 = connection.createStatement();
              Statement stmt = con.createStatement();
              ResultSet rs = stmt.executeQuery(query)
         ) {

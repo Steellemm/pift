@@ -7,7 +7,6 @@ import java.sql.*;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class EntityManagerTest {
-    String rowCountQuery = "SELECT count(*) from department";
     EntityManager entityManager;
 
     @BeforeAll
@@ -25,6 +24,7 @@ class EntityManagerTest {
         entityManager.create(Department.class);
         int expectedRows;
         int actualRows;
+        String rowCountQuery = "SELECT count(*) from department";
         try (Connection con = DriverManager.getConnection("jdbc:h2:mem:myDb;DB_CLOSE_DELAY=-1", "", "");
              Statement stmt = con.createStatement())
         {
