@@ -5,7 +5,13 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.lang.reflect.Field;
 import java.sql.*;
+import java.sql.Date;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 
 @Slf4j
@@ -137,6 +143,15 @@ public class EntityManager {
                 .findFirst().orElseThrow(() -> new IllegalArgumentException("FK object has not been created yet"));
     }
 
+    private Object getFkObjectFromCreatedEntitiesMap(Field field){
+        return createdEntitiesMap.entrySet().stream()
+                .filter(entity -> ReflectionUtils.getTableName(entity.getValue().getClass())
+                        .equals(fieldCreatorManager.getForeignKey(field)
+                                .orElseThrow(() -> new IllegalArgumentException("FK doesn't contains in yaml file"))
+                                .getTableName()))
+                .findFirst().orElseThrow(() -> new IllegalArgumentException("FK object has not been created yet")).getValue();
+    }
+
     /**
      * Saves received object to the database.
      */
@@ -170,15 +185,26 @@ public class EntityManager {
         return entityInstance;
     }
 
+    Map<Class<?>, Function<Object, Object>> sqlMapping = Stream.of(new Object[][]{
+            {LocalDate.class, (Function<Object, Object>) date -> ((Date)date).toLocalDate()},
+            {LocalDateTime.class, (Function<Object, Object>) date -> ((Timestamp)date).toLocalDateTime()}
+    }).collect(Collectors.toMap(data -> (Class<?>) data[0], data -> (Function<Object, Object>) data[1]));;
+
     private void setField(Object entity, ResultSet resultSet, Field field) {
         try {
             if (fieldCreatorManager.getForeignKey(field).isPresent()){
-                Object fkObject = getFkObjectFromCreatedEntitiesList(field);
+                Object fkObject = getFkObjectFromCreatedEntitiesMap(field);
                 ReflectionUtils.setFieldValue(entity, field, ReflectionUtils.getFieldValue(SQLUtils.getIdField(fkObject), fkObject));
             }
             else if (fieldCreatorManager.containsInFieldsMapping(field.getType())) {
-                ReflectionUtils.setFieldValue
-                        (entity, field, resultSet.getObject(SQLUtils.getColumnName(field)));
+                if (sqlMapping.containsKey(field.getType())){
+                    ReflectionUtils.setFieldValue
+                            (entity, field, sqlMapping.get(field.getType()).apply(resultSet.getObject(SQLUtils.getColumnName(field))));
+                }
+                else {
+                    ReflectionUtils.setFieldValue
+                            (entity, field, resultSet.getObject(SQLUtils.getColumnName(field)));
+                }
             } else {
                 ReflectionUtils.setFieldValue(entity, field,
                         ReflectionUtils.getEntityWithId(field.getType(), resultSet.getObject(SQLUtils.getColumnName(field))));
@@ -188,5 +214,4 @@ public class EntityManager {
         }
 
     }
-
 }

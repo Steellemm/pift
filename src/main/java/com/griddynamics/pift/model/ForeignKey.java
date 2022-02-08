@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 @Data
-public class FK {
+public class ForeignKey {
 
     @JsonProperty("table-name")
     private String tableName;
