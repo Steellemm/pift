@@ -50,7 +50,7 @@ public class SQLUtils {
     /**
      * Creates query for insert data into database.
      */
-    public static String createQueryForInsert(Object entity) {
+    public static String createQueryForInsert(Object entity, FieldCreatorManager fieldCreatorManager) {
         Class<?> type = entity.getClass();
         StringBuilder insertQuery =
                 new StringBuilder("INSERT INTO ")
@@ -63,13 +63,25 @@ public class SQLUtils {
                 insertQuery.append(",").append(" ");
             }
             if (field.isAnnotationPresent(JoinColumn.class)) {
-                values.append(
-                        readField(getIdField(entity, field), ReflectionUtils.getFieldValue(field, entity))
-                );
-            } else values.append(readField(field, entity));
-            insertQuery.append(getColumnName(field));
+                values.append(readField(getIdField(entity, field), ReflectionUtils.getFieldValue(field, entity)));
+            } else {
+                values.append(readField(field, entity));
+            }
+            if (fieldCreatorManager.getForeignKey(field).isPresent()){
+                insertQuery.append(fieldCreatorManager.getForeignKey(field).get().getColumnName());
+            } else {
+                insertQuery.append(getColumnName(field));
+            }
         });
         return insertQuery.append(") values (").append(values).append(")").toString();
+    }
+
+    public String createQueryForSelectById(Class<?> type, Object id){
+        return "SELECT * FROM " +
+                    ReflectionUtils.getTableName(type) +
+                    " WHERE " +
+                    getColumnName(getIdField(type)) +
+                    " = " + convertObjectToString(id);
     }
 
     public static Field getIdField(Object entity) {
@@ -85,6 +97,12 @@ public class SQLUtils {
     public static Field getIdField(Object entity, Field field) {
         return Arrays.stream(ReflectionUtils.getFieldValue(field, entity).getClass()
                         .getDeclaredFields()).filter(x -> x.isAnnotationPresent(Id.class))
+                .findFirst().orElseThrow(() -> new IllegalArgumentException("Exception in getIdField method"));
+    }
+
+    public static Field getIdField(Class<?> type) {
+        return Arrays.stream(type.getDeclaredFields())
+                .filter(x -> x.isAnnotationPresent(Id.class))
                 .findFirst().orElseThrow(() -> new IllegalArgumentException("Exception in getIdField method"));
     }
 
@@ -105,27 +123,12 @@ public class SQLUtils {
         return field.getName();
     }
 
-    public static String createQueryForSelectById(Class<?> type, Object id){
-        return "SELECT * FROM " +
-                ReflectionUtils.getTableName(type) +
-                " WHERE " +
-                getColumnName(getIdField(type)) +
-                " = " + convertObjectToString(id);
-    }
-
     private static String convertObjectToString(Object obj){
         if (obj instanceof String) {
             return "'" + obj + "'";
         }
         return obj.toString();
     }
-
-    public static Field getIdField(Class<?> type) {
-        return Arrays.stream(type.getDeclaredFields())
-                .filter(x -> x.isAnnotationPresent(Id.class))
-                .findFirst().orElseThrow(() -> new IllegalArgumentException("Exception in getIdField method"));
-    }
-
 
     private static String getQueryCondition(Object entity) {
         StringBuilder res = new StringBuilder();
@@ -145,4 +148,6 @@ public class SQLUtils {
                 .filter(field -> ReflectionUtils.getFieldValue(field, entity) != null)
                 .collect(Collectors.toList());
     }
+
+
 }
