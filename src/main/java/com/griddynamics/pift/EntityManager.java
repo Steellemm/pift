@@ -86,6 +86,12 @@ public class EntityManager {
         return object;
     }
 
+    public <T> T create(Class<T> type, Map<String, String> fieldValues) {
+        T object = createFilledObject(type, fieldValues);
+        createdEntitiesMap.put(getEntityClassName(type.getSimpleName()), object);
+        return object;
+    }
+
     /**
      * Creates new instance of type parameter and add it in createdEntitiesList.
      */
@@ -93,7 +99,18 @@ public class EntityManager {
         T object = ReflectionUtils.createInstance(type);
         createdEntitiesList.add(object);
         try {
-            setFields(type, object);
+            setFields(object);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Exception in create method", e);
+        }
+        return object;
+    }
+
+    private <T> T createFilledObject(Class<T> type, Map<String, String> map) {
+        T object = ReflectionUtils.createInstance(type);
+        createdEntitiesList.add(object);
+        try {
+            setFields(object, map);
         } catch (Exception e) {
             throw new IllegalArgumentException("Exception in create method", e);
         }
@@ -105,10 +122,20 @@ public class EntityManager {
      *
      * @param object which field needs to set.
      */
-    private void setFields(Class<?> type, Object object) {
+    private void setFields(Object object) {
+        Class<?> type = object.getClass();
         do {
             Arrays.stream(type.getDeclaredFields()).filter(field -> ReflectionUtils.checkIfFieldFilled(field, object))
                     .forEach(field -> setFieldRandom(object, field));
+            type = type.getSuperclass();
+        } while (type != Object.class);
+    }
+
+    private void setFields(Object object, Map<String, String> map) {
+        Class<?> type = object.getClass();
+        do {
+            Arrays.stream(type.getDeclaredFields()).filter(field -> ReflectionUtils.checkIfFieldFilled(field, object))
+                    .forEach(field -> ReflectionUtils.setFieldValue(object, field, fieldCreatorManager.getParsedValue(field.getType(), map.get(field.getName()))));
             type = type.getSuperclass();
         } while (type != Object.class);
     }

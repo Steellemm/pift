@@ -2,9 +2,9 @@ package com.griddynamics.pift;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import com.github.javafaker.Faker;
 import com.griddynamics.pift.creator.CreatorFunction;
 import com.griddynamics.pift.creator.FieldCreator;
+import com.griddynamics.pift.fieldsMapping.*;
 import com.griddynamics.pift.model.Column;
 import com.griddynamics.pift.model.ForeignKey;
 import com.griddynamics.pift.model.FieldType;
@@ -15,11 +15,9 @@ import org.reflections.Reflections;
 import java.io.File;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
-import java.sql.Date;
 import java.sql.Timestamp;
 import java.time.*;
 import java.util.*;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -27,7 +25,6 @@ import static org.reflections.scanners.Scanners.SubTypes;
 
 @Slf4j
 public class FieldCreatorManager {
-    private static final Faker faker = new Faker();
     private static final ObjectMapper MAPPER = new ObjectMapper(new YAMLFactory());
     private final Map<Field, CreatorFunction> userCreatorByField = new HashMap<>();
     private final PiftProperties piftProperties;
@@ -42,17 +39,17 @@ public class FieldCreatorManager {
      * where key - class of field type
      * value - lambda that generates value for this type
      */
-    private final static Map<Class<?>, Function<Field, Object>> fieldsMapping = Stream.of(new Object[][]{
-                    {Long.class, (Function<Field, Object>) field -> faker.number().randomNumber()},
-                    {String.class, (Function<Field, Object>) field -> faker.animal().name()},
-                    {Integer.class, (Function<Field, Object>) field -> faker.number().numberBetween(Integer.MIN_VALUE, Integer.MAX_VALUE)},
-                    {BigDecimal.class, (Function<Field, Object>) field -> new BigDecimal(faker.number().randomNumber())},
-                    {java.sql.Date.class, (Function<Field, Object>) field -> new Date(faker.date().birthday().getTime())},
-                    {Timestamp.class, (Function<Field, Object>) field -> Timestamp.from(faker.date().birthday().toInstant())},
-                    {LocalDate.class, (Function<Field, Object>) field -> faker.date().birthday().toInstant().atZone(ZoneId.of("Europe/London")).toLocalDate()},
-                    {LocalDateTime.class, (Function<Field, Object>) field -> LocalDateTime.ofInstant(faker.date().birthday().toInstant(), ZoneId.of("Europe/London"))},
+    private final static Map<Class<?>, FieldValue<?>> fieldsMapping = Stream.of(new Object[][]{
+                    {Long.class, new LongFieldValue()},
+                    {String.class, new StringFieldValue()},
+                    {Integer.class, new IntegerFieldValue()},
+                    {BigDecimal.class, new BigDecimalFieldValue()},
+                    {java.sql.Date.class, new SqlDateFieldValue()},
+                    {Timestamp.class, new TimestampFieldValue()},
+                    {LocalDate.class, new LocalDateFieldValue()},
+                    {LocalDateTime.class, new LocalDateTimeFieldValue()},
             }
-    ).collect(Collectors.toMap(data -> (Class<?>) data[0], data -> (Function<Field, Object>) data[1]));
+    ).collect(Collectors.toMap(data -> (Class<?>) data[0], data -> (FieldValue<?>) data[1]));
 
     public FieldCreatorManager() {
         try {
@@ -60,6 +57,10 @@ public class FieldCreatorManager {
         } catch (Exception e) {
             throw new IllegalArgumentException("Exception in FieldCreatorManager constructor", e);
         }
+    }
+
+    public Object getParsedValue(Class<?> type, String value){
+        return fieldsMapping.get(type).getValueFromString(value);
     }
 
     public Object createValue(Field field) {
@@ -70,7 +71,7 @@ public class FieldCreatorManager {
             return fieldCreatorMap.get(getFromProperties(field).get().getType())
                     .createValue(field, getFromProperties(field).get());
         }
-        return fieldsMapping.get(field.getType()).apply(field);
+        return fieldsMapping.get(field.getType()).generate();
     }
 
     public Optional<ForeignKey> getForeignKey(Field field) {
@@ -84,7 +85,7 @@ public class FieldCreatorManager {
         return Optional.empty();
     }
 
-    public void addValueGenerator(Class<?> type, Function<Field, Object> generator) {
+    public void addValueGenerator(Class<?> type, FieldValue<?> generator) {
         fieldsMapping.put(type, generator);
     }
 

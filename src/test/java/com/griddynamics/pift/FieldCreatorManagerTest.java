@@ -2,6 +2,7 @@ package com.griddynamics.pift;
 
 import com.github.javafaker.Faker;
 import com.griddynamics.pift.Entities.Entity;
+import com.griddynamics.pift.fieldsMapping.FieldValue;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -28,7 +29,22 @@ class FieldCreatorManagerTest {
 
     @Test
     void addValueGenerator() {
-        fieldCreatorManager.addValueGenerator(java.util.Date.class, (a) -> faker.date().birthday().getTime());
+        fieldCreatorManager.addValueGenerator(java.util.Date.class, new FieldValue<java.util.Date>() {
+            @Override
+            public java.util.Date generate() {
+                return null;
+            }
+
+            @Override
+            public Class<java.util.Date> getType() {
+                return null;
+            }
+
+            @Override
+            public java.util.Date getValueFromString(String value) {
+                return null;
+            }
+        });
         Assertions.assertTrue(fieldCreatorManager.containsInFieldsMapping(java.util.Date.class));
     }
 

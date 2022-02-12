@@ -7,7 +7,11 @@ import org.junit.jupiter.api.*;
 
 import java.math.BigDecimal;
 import java.sql.*;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @Slf4j
@@ -128,6 +132,31 @@ class EntityManagerTest {
         Assertions.assertNotNull(department.getLocation());
     }
 
+    @Test
+    void testCreate() {
+        Map<String, String> map = new HashMap<>();
+        map.put("id", "100");
+        map.put("number", "500");
+        map.put("name", "August");
+        map.put("age", "1");
+        map.put("date", "01-01-2022");
+        map.put("timestamp", "2022-02-05 13:11:58.782197");
+        map.put("localDate", "2022-01-02");
+        map.put("localDateTime", "2022-01-02T00:51:50.194084700");
+        map.put("count", "1000000");
+        map.put("department", "0");
+        Entity entity = entityManager.create(Entity.class, map);
+        Assertions.assertEquals(100, entity.getId());
+        Assertions.assertEquals("August", entity.getName());
+        Assertions.assertEquals(0, entity.getDepartment());
+        Assertions.assertEquals(500, entity.getNumber());
+        Assertions.assertEquals(1, entity.getAge());
+        Assertions.assertEquals(new BigDecimal(1000000), entity.getCount());
+        Assertions.assertEquals(Date.valueOf("2022-01-01").getTime(), entity.getDate().getTime());
+        Assertions.assertEquals(LocalDate.of(2022, 1, 2), entity.getLocalDate());
+        Assertions.assertEquals(Timestamp.valueOf("2022-02-05 13:11:58.782197"), entity.getTimestamp());
+        Assertions.assertEquals(LocalDateTime.parse("2022-01-02T00:51:50.194084700"), entity.getLocalDateTime());
+    }
 
     EntityManager getEntityManager() {
         try (Connection con = DriverManager.getConnection("jdbc:h2:mem:myDb;DB_CLOSE_DELAY=-1", "", "");
@@ -145,9 +174,12 @@ class EntityManagerTest {
     void addDataToDatabase() {
         try (Connection con = DriverManager.getConnection("jdbc:h2:mem:myDb;DB_CLOSE_DELAY=-1", "", "");
              Statement stmt = con.createStatement()) {
-            stmt.executeUpdate("INSERT INTO entity (id, number, name, count, dept_id) VALUES (6, 425821, 'snake', 345742, 10)");
+            stmt.executeUpdate("INSERT INTO entity (id, number, name, count, dept_id, localDate, timestamp, localDateTime) " +
+                    "VALUES (6, 425821, 'snake', 345742, 10, '2022-01-01', '2022-02-02 13:11:58.782197', '2022-02-01T00:51:50.194084700')");
         } catch (Exception e) {
             throw new IllegalArgumentException("Exception in addDataToDatabase method", e);
         }
     }
+
+
 }
