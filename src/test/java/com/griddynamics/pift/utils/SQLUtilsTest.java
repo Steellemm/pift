@@ -1,11 +1,13 @@
-package com.griddynamics.pift;
+package com.griddynamics.pift.utils;
 
+import com.griddynamics.pift.EntityMap;
+import com.griddynamics.pift.FieldCreatorManager;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 class SQLUtilsTest {
     TestClass testClass = new TestClass("text", 10);
-    FieldCreatorManager fieldCreatorManager = new FieldCreatorManager();
+    FieldCreatorManager fieldCreatorManager = new FieldCreatorManager(new EntityMap());
 
     @Test
     void readField() {

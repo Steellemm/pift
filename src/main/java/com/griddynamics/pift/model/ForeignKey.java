@@ -6,9 +6,9 @@ import lombok.Data;
 @Data
 public class ForeignKey {
 
-    @JsonProperty("table-name")
+    @JsonProperty("table")
     private String tableName;
 
-    @JsonProperty("column-name")
+    @JsonProperty("column")
     private String columnName;
 }

@@ -1,4 +1,4 @@
-package com.griddynamics.pift.Entities;
+package com.griddynamics.pift.entities;
 
 import lombok.Getter;
 import lombok.Setter;

@@ -1,7 +1,7 @@
 package com.griddynamics.pift;
 
-import com.griddynamics.pift.Entities.Department;
-import com.griddynamics.pift.Entities.Entity;
+import com.griddynamics.pift.entities.Department;
+import com.griddynamics.pift.entities.Entity;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.*;
 
@@ -13,25 +13,18 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @Slf4j
 class EntityManagerTest {
     Department department;
     Entity entity;
-    EntityManager entityManager;
-
-    @BeforeAll
-    void before() {
-        entityManager = getEntityManager();
-        department = entityManager.create(Department.class);
-        entity = entityManager.create(Entity.class);
-    }
+    EntityManager entityManager = getEntityManager();
 
     @BeforeEach
     void clear() {
         try (Connection con = DriverManager.getConnection("jdbc:h2:mem:myDb;DB_CLOSE_DELAY=-1", "", "");
              Statement stmt = con.createStatement()) {
             stmt.executeUpdate("DELETE FROM entity");
+            stmt.executeUpdate("DELETE FROM department");
         } catch (Exception e) {
             throw new IllegalArgumentException("Exception in clear method", e);
         }
@@ -39,6 +32,8 @@ class EntityManagerTest {
 
     @Test
     void flush() {
+        department = entityManager.createForChain(Department.class);
+        entity = entityManager.createForChain(Entity.class);
 
         entityManager.flush();
 
@@ -54,18 +49,12 @@ class EntityManagerTest {
         Assertions.assertEquals(entity.getNumber(), actualEntity.getNumber());
         Assertions.assertEquals(entity.getName(), actualEntity.getName());
         Assertions.assertEquals(entity.getAge(), actualEntity.getAge());
-        Assertions.assertNull(actualEntity.getDate());
         Assertions.assertEquals(entity.getLocalDate(), actualEntity.getLocalDate());
         Assertions.assertEquals(entity.getLocalDateTime(), actualEntity.getLocalDateTime());
         Assertions.assertEquals(entity.getTimestamp(), actualEntity.getTimestamp());
 
         Assertions.assertEquals(department.getId(), actualDepartment.getId());
         Assertions.assertEquals(department.getLocation(), actualDepartment.getLocation());
-    }
-
-    @Test
-    void create() {
-        Assertions.assertNotNull(entityManager.create(Department.class));
     }
 
     @Test
@@ -101,70 +90,40 @@ class EntityManagerTest {
     }
 
     @Test
-    void getName() {
-        Assertions.assertNotNull(entity.getName());
-    }
-
-    @Test
-    void getNumber() {
-        Assertions.assertNotNull(entity.getNumber());
-    }
-
-    @Test
-    @Disabled
-    void getAge() {
-        Assertions.assertNotNull(entity.getAge());
-    }
-
-    @Test
-    void getCount() {
-        Assertions.assertNotNull(entity.getCount());
-    }
-
-
-    @Test
-    void getId() {
-        Assertions.assertNotNull(department.getId());
-    }
-
-    @Test
-    void getLocation() {
-        Assertions.assertNotNull(department.getLocation());
-    }
-
-    @Test
     void testCreate() {
         Map<String, String> map = new HashMap<>();
         map.put("id", "100");
         map.put("number", "500");
         map.put("name", "August");
         map.put("age", "1");
-        map.put("date", "01-01-2022");
-        map.put("timestamp", "2022-02-05 13:11:58.782197");
+        map.put("date", "2022-01-01");
+        map.put("timestamp", "2022-02-05T13:11:58.782197Z");
         map.put("localDate", "2022-01-02");
         map.put("localDateTime", "2022-01-02T00:51:50.194084700");
         map.put("count", "1000000");
         map.put("department", "0");
-        Entity entity = entityManager.create(Entity.class, map);
+        Department department = entityManager.createForChain(Department.class);
+        Entity entity = entityManager.createForChain(Entity.class);
+        entityManager.update(entity, map);
         Assertions.assertEquals(100, entity.getId());
         Assertions.assertEquals("August", entity.getName());
-        Assertions.assertEquals(0, entity.getDepartment());
+        Assertions.assertEquals(department.getId(), entity.getDepartment());
         Assertions.assertEquals(500, entity.getNumber());
         Assertions.assertEquals(1, entity.getAge());
         Assertions.assertEquals(new BigDecimal(1000000), entity.getCount());
-        Assertions.assertEquals(Date.valueOf("2022-01-01").getTime(), entity.getDate().getTime());
+        Assertions.assertEquals("2022-01-01T00:00:00Z", entity.getDate().toInstant().toString());
         Assertions.assertEquals(LocalDate.of(2022, 1, 2), entity.getLocalDate());
-        Assertions.assertEquals(Timestamp.valueOf("2022-02-05 13:11:58.782197"), entity.getTimestamp());
+        Assertions.assertEquals("2022-02-05T13:11:58.782197Z", entity.getTimestamp().toInstant().toString());
         Assertions.assertEquals(LocalDateTime.parse("2022-01-02T00:51:50.194084700"), entity.getLocalDateTime());
     }
 
-    EntityManager getEntityManager() {
+    private EntityManager getEntityManager() {
         try (Connection con = DriverManager.getConnection("jdbc:h2:mem:myDb;DB_CLOSE_DELAY=-1", "", "");
              Statement stmt = con.createStatement()) {
-            stmt.executeUpdate("CREATE TABLE entity " +
+            stmt.executeUpdate("CREATE TABLE IF NOT EXISTS entity " +
                     "(id bigint primary key , number bigint, name varchar(50), age int, count decimal, localdatetime timestamp, " +
-                    " date date, timestamp timestamp, localdate date, dept_id bigint); " +
-                    "CREATE TABLE department (id bigint primary key , location varchar(50));");
+                    " date date, timestamp timestamp, localdate date, dept_id bigint, address varchar(50)); " +
+                    "CREATE TABLE IF NOT EXISTS department (id bigint primary key , location varchar(50));");
         } catch (Exception e) {
             throw new IllegalArgumentException("Exception in getEntityManager method", e);
         }

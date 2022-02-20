@@ -1,5 +1,6 @@
-package com.griddynamics.pift;
+package com.griddynamics.pift.utils;
 
+import com.griddynamics.pift.FieldCreatorManager;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.reflect.FieldUtils;
@@ -9,6 +10,8 @@ import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.Version;
 import java.lang.reflect.Field;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.time.temporal.Temporal;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -21,6 +24,8 @@ public class SQLUtils {
             Arrays.asList(JoinColumn.class, Id.class, Version.class)
     );
 
+    DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+
     /**
      * Returns the field value valid for the request.
      *
@@ -29,11 +34,14 @@ public class SQLUtils {
      */
     public static String readField(Field field, Object target) {
         try {
-            Object o = FieldUtils.readField(field, target, true);
-            if (o instanceof String || o instanceof Date || o instanceof Temporal) {
-                return "'" + o + "'";
+            Object value = FieldUtils.readField(field, target, true);
+            if (value.getClass().equals(Date.class)) {
+                return "'" + dateFormat.format((Date) value) + "'";
             }
-            return o.toString();
+            if (value instanceof String || value instanceof Date || value instanceof Temporal) {
+                return "'" + value + "'";
+            }
+            return value.toString();
         } catch (IllegalAccessException e) {
             throw new IllegalArgumentException(e);
         }
@@ -67,11 +75,7 @@ public class SQLUtils {
             } else {
                 values.append(readField(field, entity));
             }
-            if (fieldCreatorManager.getForeignKey(field).isPresent()){
-                insertQuery.append(fieldCreatorManager.getForeignKey(field).get().getColumnName());
-            } else {
-                insertQuery.append(getColumnName(field));
-            }
+            insertQuery.append(ReflectionUtils.getColumnName(field));
         });
         return insertQuery.append(") values (").append(values).append(")").toString();
     }
@@ -80,13 +84,8 @@ public class SQLUtils {
         return "SELECT * FROM " +
                     ReflectionUtils.getTableName(type) +
                     " WHERE " +
-                    getColumnName(getIdField(type)) +
+                    ReflectionUtils.getColumnName(ReflectionUtils.getIdField(type)) +
                     " = " + convertObjectToString(id);
-    }
-
-    public static Field getIdField(Object entity) {
-        return Arrays.stream(entity.getClass().getDeclaredFields()).filter(x -> x.isAnnotationPresent(Id.class))
-                .findFirst().orElseThrow(() -> new IllegalArgumentException("Exception in getIdField method"));
     }
 
     /**
@@ -98,29 +97,6 @@ public class SQLUtils {
         return Arrays.stream(ReflectionUtils.getFieldValue(field, entity).getClass()
                         .getDeclaredFields()).filter(x -> x.isAnnotationPresent(Id.class))
                 .findFirst().orElseThrow(() -> new IllegalArgumentException("Exception in getIdField method"));
-    }
-
-    public static Field getIdField(Class<?> type) {
-        return Arrays.stream(type.getDeclaredFields())
-                .filter(x -> x.isAnnotationPresent(Id.class))
-                .findFirst().orElseThrow(() -> new IllegalArgumentException("Exception in getIdField method"));
-    }
-
-    /**
-     * Gets the table column name that matches the received field.
-     *
-     * @param field to be matched.
-     * @return String name of column.
-     */
-    public static String getColumnName(Field field) {
-        if (field.isAnnotationPresent(JoinColumn.class)) {
-            return field.getAnnotation(JoinColumn.class).name();
-        }
-        if (field.isAnnotationPresent(Column.class) &&
-                !field.getAnnotation(Column.class).name().isEmpty()) {
-            return field.getAnnotation(Column.class).name();
-        }
-        return field.getName();
     }
 
     private static String convertObjectToString(Object obj){

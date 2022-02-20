@@ -1,11 +1,11 @@
-package com.griddynamics.pift.Entities;
+package com.griddynamics.pift.entities;
 
 import lombok.Getter;
 import lombok.Setter;
 
 import javax.persistence.*;
 import java.math.BigDecimal;
-import java.sql.Date;
+import java.util.Date;
 import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -30,7 +30,6 @@ public class Entity extends SuperEntity{
     private Integer age;
 
     @Column
-    @Transient
     private Date date;
 
     @Column
@@ -45,8 +44,7 @@ public class Entity extends SuperEntity{
     @Column
     private BigDecimal count;
 
-//    @OneToOne(cascade = CascadeType.ALL)
-//    @JoinColumn(name = "dept_id", referencedColumnName = "id")
+    @Column(name = "dept_id")
     private Long department;
 
     @Override

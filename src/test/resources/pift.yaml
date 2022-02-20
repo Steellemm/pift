@@ -1,23 +1,24 @@
 tables:
   entity:
     foreign-keys:
-      department:
-        table-name: department
-        column-name: 'dept_id'
+      dept_id:
+        table: department
+        column: 'id'
     columns:
       timestamp:
         type: DATE
         condition:
           max: 'current'
-          min: '2022-01-29 13:11:58.782197'
+          min: '2022-01-29T13:11:58.782197Z'
       date:
         type: DATE
         condition:
           max: 'current'
-          min: '12-13-2021'
+          min: '2021-12-13'
       name:
         type: STRING
-        format: '[0-9][0-9][0-9][0-9]'
+        condition:
+          format: '[0-9][0-9][0-9][0-9]'
       age:
         type: NUMBER
         condition:
@@ -27,7 +28,7 @@ tables:
         type: DATE
         condition:
           max: 'current'
-          min: '2022-01-01T00:51:50.194084700'
+          min: '2022-01-01T00:51:50.194084700Z'
       localDate:
         type: DATE
         condition:
