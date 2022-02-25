@@ -32,8 +32,8 @@ class EntityManagerTest {
 
     @Test
     void flush() {
-        department = entityManager.createForChain(Department.class);
-        entity = entityManager.createForChain(Entity.class);
+        department = entityManager.create(Department.class);
+        entity = entityManager.create(Entity.class);
 
         entityManager.flush();
 
@@ -102,9 +102,8 @@ class EntityManagerTest {
         map.put("localDateTime", "2022-01-02T00:51:50.194084700");
         map.put("count", "1000000");
         map.put("department", "0");
-        Department department = entityManager.createForChain(Department.class);
-        Entity entity = entityManager.createForChain(Entity.class);
-        entityManager.update(entity, map);
+        Department department = entityManager.create(Department.class);
+        Entity entity = entityManager.create(Entity.class, map);
         Assertions.assertEquals(100, entity.getId());
         Assertions.assertEquals("August", entity.getName());
         Assertions.assertEquals(department.getId(), entity.getDepartment());

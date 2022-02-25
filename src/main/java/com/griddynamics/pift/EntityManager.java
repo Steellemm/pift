@@ -49,40 +49,32 @@ public class EntityManager {
 
     public <T> Optional<T> getById(Class<T> type, Object id) {
         ReflectionUtils.checkOnTable(type);
-        String query = SQLUtils.createQueryForSelectById(type, id);
-        log.debug(query);
-        try (Connection con = DriverManager.getConnection(url, user, password);
-             Statement stmt = con.createStatement();
-             ResultSet rs = stmt.executeQuery(query)
-        ) {
-            if (rs.isBeforeFirst()) {
-                rs.next();
-                return Optional.of(getEntityFromResultSet(type, rs));
-            } else {
-                return Optional.empty();
-            }
-        } catch (Exception e) {
-            throw new IllegalStateException("Exception in getById method", e);
-        }
+        T instance = ReflectionUtils.createInstance(type);
+        ReflectionUtils.setIdField(instance, id);
+        return getList(instance).stream().findFirst();
     }
 
-    public <T> T createForChain(Class<T> type) {
-        return createForChain(type, null);
+    public <T> T create(Class<T> type) {
+        return create(type, "");
     }
 
-    public <T> T createForChain(Class<T> type, String entityId) {
-        String id = create(type, entityId);
+    public <T> T create(Class<T> type, String entityId) {
+        return create(type, Collections.emptyMap(), entityId);
+    }
+
+    public <T> T create(Class<T> type, Map<String, String> values) {
+        return create(type, values, "");
+    }
+
+    public <T> T create(Class<T> type, Map<String, String> values, String entityId) {
+        String id = createAndGetName(type, values, entityId);
         return entityMap.get(id);
     }
 
     /**
      * Creates new instance of type class with random values in fields.
      */
-    public String create(Class<?> type) {
-        return create(type, null);
-    }
-
-    public String create(Class<?> type, String entityId) {
+    public String createAndGetName(Class<?> type, Map<String, String> values, String entityId) {
         Object object = createFilledObject(type);
         if (entityId == null || entityId.isEmpty()) {
             return entityMap.add(object);
@@ -92,11 +84,7 @@ public class EntityManager {
     }
 
     public <T> T update(T entity, Map<String, String> fieldValues) {
-        try {
-            setFields(entity, fieldValues);
-        } catch (Exception e) {
-            throw new IllegalArgumentException("Exception in create method", e);
-        }
+        setFields(entity, fieldValues);
         return entity;
     }
 
