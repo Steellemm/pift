@@ -1,35 +1,33 @@
 package com.griddynamics.pift;
 
+import com.griddynamics.pift.utils.ReflectionUtils;
+import com.griddynamics.pift.utils.SQLUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.lang.reflect.Field;
-import java.sql.*;
-import java.sql.Date;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.Statement;
 import java.util.*;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 
 @Slf4j
 @RequiredArgsConstructor
 public class EntityManager {
-    private final Map<String, Object> createdEntitiesMap = new HashMap<>();
-    private final List<Object> createdEntitiesList = new ArrayList<>();
     private final String url;
     private final String user;
     private final String password;
-    private final FieldCreatorManager fieldCreatorManager = new FieldCreatorManager();
+    private final EntityMap entityMap = new EntityMap();
+    private final FieldCreatorManager fieldCreatorManager = new FieldCreatorManager(entityMap);
 
     /**
-     * Pushes the objects from createdEntitiesList into database and then clears the list.
+     * Pushes all objects into database
      */
     public void flush() {
-        createdEntitiesList.forEach(this::saveEntity);
-        createdEntitiesList.clear();
+        entityMap.getNotFlushedEntities().forEach(this::saveEntity);
+        entityMap.flush();
     }
 
     public <T> List<T> getList(T entity) {
@@ -39,8 +37,7 @@ public class EntityManager {
         List<T> entityList = new ArrayList<>();
         try (Connection con = DriverManager.getConnection(url, user, password);
              Statement stmt = con.createStatement();
-             ResultSet rs = stmt.executeQuery(queryForSelect)
-        ) {
+             ResultSet rs = stmt.executeQuery(queryForSelect)) {
             while (rs.next()) {
                 entityList.add(getEntityFromResultSet(type, rs));
             }
@@ -52,52 +49,56 @@ public class EntityManager {
 
     public <T> Optional<T> getById(Class<T> type, Object id) {
         ReflectionUtils.checkOnTable(type);
-        String query = SQLUtils.createQueryForSelectById(type, id);
-        log.debug(query);
-        try (Connection con = DriverManager.getConnection(url, user, password);
-             Statement stmt = con.createStatement();
-             ResultSet rs = stmt.executeQuery(query)
-        ) {
-            if (rs.isBeforeFirst()) {
-                rs.next();
-                return Optional.of(getEntityFromResultSet(type, rs));
-            } else {
-                return Optional.empty();
-            }
-        } catch (Exception e) {
-            throw new IllegalStateException("Exception in getById method", e);
-        }
+        T instance = ReflectionUtils.createInstance(type);
+        ReflectionUtils.setIdField(instance, id);
+        return getList(instance).stream().findFirst();
+    }
+
+    public <T> T create(Class<T> type) {
+        return create(type, "");
+    }
+
+    public <T> T create(Class<T> type, String entityId) {
+        return create(type, Collections.emptyMap(), entityId);
+    }
+
+    public <T> T create(Class<T> type, Map<String, String> values) {
+        return create(type, values, "");
+    }
+
+    public <T> T create(Class<T> type, Map<String, String> values, String entityId) {
+        String id = createAndGetName(type, values, entityId);
+        return entityMap.get(id);
     }
 
     /**
      * Creates new instance of type class with random values in fields.
-     *
-     * @param type of the entity class.
-     * @return new instance of type class.
      */
-    public <T> T create(Class<T> type) {
-        return create(type, type.getSimpleName());
+    public String createAndGetName(Class<?> type, Map<String, String> values, String entityId) {
+        Object object = createFilledObject(type);
+        if (entityId == null || entityId.isEmpty()) {
+            return entityMap.add(object);
+        } else {
+            return entityMap.add(object, entityId);
+        }
     }
 
-    public <T> T create(Class<T> type, String entityId) {
-        log.debug(createdEntitiesMap.keySet().toString());
-        T object = createFilledObject(type);
-        createdEntitiesMap.put(getEntityClassName(entityId), object);
-        return object;
+    public <T> T update(T entity, Map<String, String> fieldValues) {
+        setFields(entity, fieldValues);
+        return entity;
     }
 
     /**
      * Creates new instance of type parameter and add it in createdEntitiesList.
      */
     private <T> T createFilledObject(Class<T> type) {
-        T object = ReflectionUtils.createInstance(type);
-        createdEntitiesList.add(object);
         try {
-            setFields(type, object);
+            T object = ReflectionUtils.createInstance(type);
+            setFields(object);
+            return object;
         } catch (Exception e) {
             throw new IllegalArgumentException("Exception in create method", e);
         }
-        return object;
     }
 
     /**
@@ -105,51 +106,26 @@ public class EntityManager {
      *
      * @param object which field needs to set.
      */
-    private void setFields(Class<?> type, Object object) {
-        do {
-            Arrays.stream(type.getDeclaredFields()).filter(field -> ReflectionUtils.checkIfFieldFilled(field, object))
-                    .forEach(field -> setFieldRandom(object, field));
-            type = type.getSuperclass();
-        } while (type != Object.class);
+    private void setFields(Object object) {
+        setFields(object, Collections.emptyMap());
+    }
+
+    private void setFields(Object object, Map<String, String> valueMap) {
+        ReflectionUtils.getColumnFields(object.getClass())
+                .forEach(field -> {
+                    if (valueMap.containsKey(ReflectionUtils.getColumnName(field))) {
+                        ReflectionUtils.setFieldValue(
+                                object,
+                                field,
+                                fieldCreatorManager.getParsedValue(field.getType(), valueMap.get(field.getName())));
+                    } else {
+                        setFieldRandom(object, field);
+                    }
+                });
     }
 
     private void setFieldRandom(Object obj, Field field) {
-        if (fieldCreatorManager.existInProperties(field)) {
-            if (fieldCreatorManager.getForeignKey(field).isPresent()) {
-                Object fkObject = getFkObjectFromCreatedEntitiesList(field);
-                ReflectionUtils.setFieldValue(obj, field, ReflectionUtils.getFieldValue(SQLUtils.getIdField(fkObject), fkObject));
-            } else {
-                ReflectionUtils.setFieldValue(obj, field, fieldCreatorManager.createValue(field));
-            }
-        } else {
-            if (!fieldCreatorManager.containsInFieldsMapping(field.getType())) {
-                ReflectionUtils.setFieldValue(obj, field, createdEntitiesList.stream()
-                        .filter(x -> x.getClass().isAssignableFrom(field.getType()))
-                        .findFirst()
-                        .orElseThrow(() -> new IllegalArgumentException(
-                                "Trying to set object that has not been created yet")));
-            } else {
-                ReflectionUtils.setFieldValue(obj, field, fieldCreatorManager.createValue(field));
-            }
-        }
-    }
-
-    private Object getFkObjectFromCreatedEntitiesList(Field field){
-        return createdEntitiesList.stream()
-                .filter(entity -> ReflectionUtils.getTableName(entity.getClass())
-                        .equals(fieldCreatorManager.getForeignKey(field)
-                                .orElseThrow(() -> new IllegalArgumentException("FK doesn't contains in yaml file"))
-                                .getTableName()))
-                .findFirst().orElseThrow(() -> new IllegalArgumentException("FK object has not been created yet"));
-    }
-
-    private Object getFkObjectFromCreatedEntitiesMap(Field field){
-        return createdEntitiesMap.entrySet().stream()
-                .filter(entity -> ReflectionUtils.getTableName(entity.getValue().getClass())
-                        .equals(fieldCreatorManager.getForeignKey(field)
-                                .orElseThrow(() -> new IllegalArgumentException("FK doesn't contains in yaml file"))
-                                .getTableName()))
-                .findFirst().orElseThrow(() -> new IllegalArgumentException("FK object has not been created yet")).getValue();
+        ReflectionUtils.setFieldValue(obj, field, fieldCreatorManager.getFieldValue(field));
     }
 
     /**
@@ -162,56 +138,33 @@ public class EntityManager {
     private void executeQuery(String query) {
         log.debug(query);
         try (Connection con = DriverManager.getConnection(url, user, password);
-             Statement stmt = con.createStatement())
-        {
+             Statement stmt = con.createStatement()) {
             stmt.executeUpdate(query);
         } catch (Exception e) {
             throw new IllegalArgumentException("Exception in connect method", e);
         }
     }
 
-    private String getEntityClassName(String entityClassName) {
-        String str = entityClassName;
-        int counter = 0;
-        while (createdEntitiesMap.containsKey(entityClassName)) {
-            entityClassName = str + (++counter);
-        }
-        return entityClassName;
-    }
-
     private  <T> T getEntityFromResultSet(Class<T> type, ResultSet resultSet) {
         T entityInstance = ReflectionUtils.createInstance(type);
-        ReflectionUtils.getColumnFields(type).forEach(field -> setField(entityInstance, resultSet, field));
+        ReflectionUtils.getColumnFields(type)
+                .forEach(field -> ReflectionUtils.setFieldValue(entityInstance, field, getFieldValue(resultSet, field)));
         return entityInstance;
     }
 
-    Map<Class<?>, Function<Object, Object>> sqlMapping = Stream.of(new Object[][]{
-            {LocalDate.class, (Function<Object, Object>) date -> ((Date)date).toLocalDate()},
-            {LocalDateTime.class, (Function<Object, Object>) date -> ((Timestamp)date).toLocalDateTime()}
-    }).collect(Collectors.toMap(data -> (Class<?>) data[0], data -> (Function<Object, Object>) data[1]));;
-
-    private void setField(Object entity, ResultSet resultSet, Field field) {
+    private Object getFieldValue(ResultSet resultSet, Field field) {
         try {
-            if (fieldCreatorManager.getForeignKey(field).isPresent()){
-                Object fkObject = getFkObjectFromCreatedEntitiesMap(field);
-                ReflectionUtils.setFieldValue(entity, field, ReflectionUtils.getFieldValue(SQLUtils.getIdField(fkObject), fkObject));
+            Class<?> type = field.getType();
+            String columnName = ReflectionUtils.getColumnName(field);
+            if (fieldCreatorManager.supportsType(type)) {
+                return resultSet.getObject(columnName, type);
             }
-            else if (fieldCreatorManager.containsInFieldsMapping(field.getType())) {
-                if (sqlMapping.containsKey(field.getType())){
-                    ReflectionUtils.setFieldValue
-                            (entity, field, sqlMapping.get(field.getType()).apply(resultSet.getObject(SQLUtils.getColumnName(field))));
-                }
-                else {
-                    ReflectionUtils.setFieldValue
-                            (entity, field, resultSet.getObject(SQLUtils.getColumnName(field)));
-                }
-            } else {
-                ReflectionUtils.setFieldValue(entity, field,
-                        ReflectionUtils.getEntityWithId(field.getType(), resultSet.getObject(SQLUtils.getColumnName(field))));
-            }
+            ReflectionUtils.checkOnTable(type);
+            Object foreignEntity = ReflectionUtils.createInstance(type);
+            ReflectionUtils.setIdField(foreignEntity, resultSet.getObject(columnName));
+            return foreignEntity;
         } catch (Exception e) {
             throw new IllegalStateException("Exception in setField method", e);
         }
-
     }
 }

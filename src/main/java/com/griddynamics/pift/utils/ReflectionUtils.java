@@ -1,29 +1,19 @@
-package com.griddynamics.pift;
+package com.griddynamics.pift.utils;
 
 
 import lombok.experimental.UtilityClass;
 import org.apache.commons.lang3.reflect.FieldUtils;
+import org.reflections.Reflections;
 
 import javax.persistence.*;
 import java.lang.reflect.Field;
-import java.sql.ResultSet;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.util.Arrays;
-import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import static org.reflections.scanners.Scanners.SubTypes;
 
 @UtilityClass
 public class ReflectionUtils {
-
-    private final static Map<Class<?>, Function<Long, Object>> longToDateConverterMap = Stream.of(new Object[][]{
-                    {LocalDate.class, (Function<Long, Object>) LocalDate::ofEpochDay},
-                    {LocalDateTime.class, (Function<Long, Object>) epochSecond -> LocalDateTime.ofEpochSecond(epochSecond, 0, ZoneOffset.UTC)},
-            }
-    ).collect(Collectors.toMap(data -> (Class<?>) data[0], data -> (Function<Long, Object>) data[1]));
 
     /**
      * Checks if received field is filled in the object.
@@ -33,7 +23,7 @@ public class ReflectionUtils {
      * @return boolean
      */
     public static boolean checkIfFieldFilled(Field field, Object object) {
-        return getFieldValue(field, object) == null;
+        return getFieldValue(field, object) != null;
     }
 
     /**
@@ -54,6 +44,22 @@ public class ReflectionUtils {
         return getTableName(field.getDeclaringClass());
     }
 
+    /**
+     * Gets the table column name that matches the received field.
+     *
+     * @param field to be matched.
+     * @return String name of column.
+     */
+    public static String getColumnName(Field field) {
+        if (field.isAnnotationPresent(JoinColumn.class)) {
+            return field.getAnnotation(JoinColumn.class).name();
+        }
+        if (field.isAnnotationPresent(Column.class) &&
+                !field.getAnnotation(Column.class).name().isEmpty()) {
+            return field.getAnnotation(Column.class).name();
+        }
+        return field.getName();
+    }
 
     /**
      * Gets object fields that need to be matched with table columns.
@@ -61,9 +67,14 @@ public class ReflectionUtils {
      * @return Stream of fields.
      */
     public static Stream<Field> getColumnFields(Class<?> type) {
-        return Arrays.stream(type.getDeclaredFields())
+        Stream<Field> stream = Arrays.stream(type.getDeclaredFields())
                 .filter(field -> !field.isAnnotationPresent(Transient.class))
                 .filter(field -> !field.isAnnotationPresent(Version.class));
+        if (type.getSuperclass() != Object.class) {
+            return Stream.concat(stream, getColumnFields(type.getSuperclass()));
+        } else {
+            return stream;
+        }
     }
 
 
@@ -109,21 +120,9 @@ public class ReflectionUtils {
         }
     }
 
-    public static <T> T createInstance(Class<T> type, Long msec) {
-        try {
-            if (longToDateConverterMap.containsKey(type)) {
-                return (T) longToDateConverterMap.get(type).apply(msec);
-            }
-            return type.getConstructor(Long.TYPE).newInstance(msec);
-        } catch (Exception e) {
-            throw new IllegalArgumentException("Exception in createInstance method", e);
-        }
-    }
-
-
-    public static  <T> Object getEntityWithId(Class<T> type, Object id) {
+    public static <T> Object getEntityWithId(Class<T> type, Object id) {
         Object obj = ReflectionUtils.createInstance(type);
-        ReflectionUtils.setFieldValue(obj, SQLUtils.getIdField(type), id);
+        ReflectionUtils.setFieldValue(obj, getIdField(type), id);
         return obj;
     }
 
@@ -131,5 +130,28 @@ public class ReflectionUtils {
         if (!type.isAnnotationPresent(Table.class)) {
             throw new IllegalArgumentException("POJO is not reflection of table: " + type.getCanonicalName());
         }
+    }
+
+    public static void setIdField(Object entity, Object id) {
+        Field idField = getIdField(entity.getClass());
+        setFieldValue(entity, idField, id);
+    }
+
+    public static Field getIdField(Class<?> type) {
+        return Arrays.stream(type.getDeclaredFields())
+                .filter(x -> x.isAnnotationPresent(Id.class))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Exception in getIdField method"));
+    }
+
+    public static Object getIdValue(Object entity) {
+        return getFieldValue(getIdField(entity.getClass()), entity);
+    }
+
+    public static <T> Stream<T> getClassHeirs(Class<T> parent, String packet) {
+        return new Reflections(packet).get(SubTypes.of(parent).asClass())
+                .stream()
+                .filter(c -> !c.isInterface())
+                .map(heir -> (T) createInstance(heir));
     }
 }

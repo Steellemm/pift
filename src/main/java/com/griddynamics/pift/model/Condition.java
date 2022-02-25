@@ -6,4 +6,5 @@ import lombok.Data;
 public class Condition {
     private String max;
     private String min;
+    private String format;
 }

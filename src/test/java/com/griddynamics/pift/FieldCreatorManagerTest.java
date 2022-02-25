@@ -1,17 +1,17 @@
 package com.griddynamics.pift;
 
-import com.github.javafaker.Faker;
-import com.griddynamics.pift.Entities.Entity;
+import com.griddynamics.pift.entities.Entity;
+import com.griddynamics.pift.creator.TypeValue;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.sql.Date;
 import java.time.LocalDate;
 
 class FieldCreatorManagerTest {
-    FieldCreatorManager fieldCreatorManager = new FieldCreatorManager();
-    Faker faker = new Faker();
+    private final FieldCreatorManager fieldCreatorManager = new FieldCreatorManager(new EntityMap());
 
     @Test
     @SneakyThrows
@@ -21,15 +21,27 @@ class FieldCreatorManagerTest {
     }
 
     @Test
-    @SneakyThrows
-    void getForeignKeyTableName() {
-        Assertions.assertTrue(fieldCreatorManager.getForeignKey(Entity.class.getDeclaredField("department")).isPresent());
+    void addValueGenerator() {
+        fieldCreatorManager.addValueGenerator(NewFieldClass.class, new TypeValue<NewFieldClass>() {
+            @Override
+            public NewFieldClass generate() {
+                return null;
+            }
+
+            @Override
+            public Class<NewFieldClass> getType() {
+                return null;
+            }
+
+            @Override
+            public NewFieldClass parse(String value) {
+                return null;
+            }
+        });
+        Assertions.assertTrue(fieldCreatorManager.supportsType(NewFieldClass.class));
     }
 
-    @Test
-    void addValueGenerator() {
-        fieldCreatorManager.addValueGenerator(java.util.Date.class, (a) -> faker.date().birthday().getTime());
-        Assertions.assertTrue(fieldCreatorManager.containsInFieldsMapping(java.util.Date.class));
+    private static class NewFieldClass {
     }
 
     @Test
@@ -41,12 +53,6 @@ class FieldCreatorManagerTest {
 
     @Test
     void containsInFieldsMapping() {
-        Assertions.assertTrue(fieldCreatorManager.containsInFieldsMapping(LocalDate.class));
-    }
-
-    @Test
-    @SneakyThrows
-    void existInProperties() {
-        Assertions.assertTrue(fieldCreatorManager.existInProperties(Entity.class.getDeclaredField("date")));
+        Assertions.assertTrue(fieldCreatorManager.supportsType(LocalDate.class));
     }
 }

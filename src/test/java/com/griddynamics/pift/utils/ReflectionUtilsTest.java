@@ -1,21 +1,14 @@
-package com.griddynamics.pift;
+package com.griddynamics.pift.utils;
 
-import com.griddynamics.pift.Entities.Department;
-import lombok.RequiredArgsConstructor;
+import com.griddynamics.pift.entities.Department;
+import com.griddynamics.pift.utils.ReflectionUtils;
 import org.junit.jupiter.api.*;
 
 import java.lang.reflect.Field;
 import java.util.Arrays;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 class ReflectionUtilsTest {
     TestClass testClass = new TestClass("text");
-
-    @Test
-    @Disabled
-    void checkIfFieldFilled() {
-    }
 
     @Test
     void getTableName() {

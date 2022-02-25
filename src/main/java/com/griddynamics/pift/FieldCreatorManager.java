@@ -1,100 +1,87 @@
 package com.griddynamics.pift;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import com.github.javafaker.Faker;
-import com.griddynamics.pift.creator.CreatorFunction;
-import com.griddynamics.pift.creator.FieldCreator;
+import com.griddynamics.pift.creator.FieldValueCreator;
+import com.griddynamics.pift.creator.TypeValue;
 import com.griddynamics.pift.model.Column;
 import com.griddynamics.pift.model.ForeignKey;
-import com.griddynamics.pift.model.FieldType;
-import com.griddynamics.pift.model.PiftProperties;
+import com.griddynamics.pift.types.TypeValueMap;
+import com.griddynamics.pift.utils.ReflectionUtils;
+import com.griddynamics.pift.utils.SQLUtils;
 import lombok.extern.slf4j.Slf4j;
-import org.reflections.Reflections;
 
-import java.io.File;
 import java.lang.reflect.Field;
-import java.math.BigDecimal;
-import java.sql.Date;
-import java.sql.Timestamp;
-import java.time.*;
-import java.util.*;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import static org.reflections.scanners.Scanners.SubTypes;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 
 @Slf4j
 public class FieldCreatorManager {
-    private static final Faker faker = new Faker();
-    private static final ObjectMapper MAPPER = new ObjectMapper(new YAMLFactory());
-    private final Map<Field, CreatorFunction> userCreatorByField = new HashMap<>();
-    private final PiftProperties piftProperties;
-    private final Reflections reflections = new Reflections("com.griddynamics.pift.creator");
 
-    private final Map<FieldType, FieldCreator> fieldCreatorMap = reflections.get(SubTypes.of(FieldCreator.class).asClass())
-            .stream().map(x -> (FieldCreator) ReflectionUtils.createInstance(x))
-            .collect(Collectors.toMap(FieldCreator::getFieldType, x -> x));
+    private final Map<Field, FieldValueCreator> userCreatorByField = new HashMap<>();
+    private final PiftManager piftManager = PiftManager.getInstance();
+    private final TypeValueMap typeValueMap = TypeValueMap.getInstance();
+    private final EntityMap entityMap;
 
-    /**
-     * Map for autogenerate random values,
-     * where key - class of field type
-     * value - lambda that generates value for this type
-     */
-    private final static Map<Class<?>, Function<Field, Object>> fieldsMapping = Stream.of(new Object[][]{
-                    {Long.class, (Function<Field, Object>) field -> faker.number().randomNumber()},
-                    {String.class, (Function<Field, Object>) field -> faker.animal().name()},
-                    {Integer.class, (Function<Field, Object>) field -> faker.number().numberBetween(Integer.MIN_VALUE, Integer.MAX_VALUE)},
-                    {BigDecimal.class, (Function<Field, Object>) field -> new BigDecimal(faker.number().randomNumber())},
-                    {java.sql.Date.class, (Function<Field, Object>) field -> new Date(faker.date().birthday().getTime())},
-                    {Timestamp.class, (Function<Field, Object>) field -> Timestamp.from(faker.date().birthday().toInstant())},
-                    {LocalDate.class, (Function<Field, Object>) field -> faker.date().birthday().toInstant().atZone(ZoneId.of("Europe/London")).toLocalDate()},
-                    {LocalDateTime.class, (Function<Field, Object>) field -> LocalDateTime.ofInstant(faker.date().birthday().toInstant(), ZoneId.of("Europe/London"))},
-            }
-    ).collect(Collectors.toMap(data -> (Class<?>) data[0], data -> (Function<Field, Object>) data[1]));
+    public FieldCreatorManager(EntityMap entityMap) {
+        this.entityMap = entityMap;
+    }
 
-    public FieldCreatorManager() {
-        try {
-            piftProperties = MAPPER.readValue(new File("src/test/resources/pift.yaml"), PiftProperties.class);
-        } catch (Exception e) {
-            throw new IllegalArgumentException("Exception in FieldCreatorManager constructor", e);
-        }
+    public Object getParsedValue(Class<?> type, String value){
+        return typeValueMap.get(type).parse(value);
     }
 
     public Object createValue(Field field) {
         if (userCreatorByField.containsKey(field)) {
             return userCreatorByField.get(field).apply(field);
         }
-        if (existInProperties(field)) {
-            return fieldCreatorMap.get(getFromProperties(field).get().getType())
-                    .createValue(field, getFromProperties(field).get());
+        Optional<Column> column = getFromProperties(field);
+        if (column.isPresent()) {
+            TypeValue<?> typeValue = typeValueMap.get(field.getType());
+            return column.get().getCondition() == null
+                    ? typeValue.generate()
+                    : typeValue.generate(column.get().getCondition());
         }
-        return fieldsMapping.get(field.getType()).apply(field);
+        return typeValueMap.get(field.getType()).generate();
     }
 
     public Optional<ForeignKey> getForeignKey(Field field) {
         String tableName = ReflectionUtils.getTableName(field);
-        String columnName = SQLUtils.getColumnName(field);
-        if (piftProperties.getTables().containsKey(tableName) && piftProperties.getTables().get(tableName)
-                .getForeignKeys().containsKey(columnName)) {
-            return Optional.ofNullable(piftProperties.getTables().get(tableName)
-                    .getForeignKeys().get(columnName));
+        String columnName = ReflectionUtils.getColumnName(field);
+        return piftManager.getForeignKey(tableName, columnName);
+    }
+
+    public Object getFieldValue(Field field) {
+        Optional<ForeignKey> foreignKey = getForeignKey(field);
+        if (foreignKey.isPresent()) {
+            return ReflectionUtils.getIdValue(getFkObject(foreignKey.get()));
         }
-        return Optional.empty();
+        if (supportsType(field.getType())) {
+            return createValue(field);
+        }
+        return getFkObject(field.getType());
     }
 
-    public void addValueGenerator(Class<?> type, Function<Field, Object> generator) {
-        fieldsMapping.put(type, generator);
+    private Object getFkObject(ForeignKey foreignKey) {
+        String tableName = foreignKey.getTableName();
+        return entityMap.getLast(entity -> ReflectionUtils.getTableName(entity.getClass()).equals(tableName))
+                .orElseThrow(() -> new IllegalArgumentException("FK object has not been created yet"));
     }
 
-    public void addValueGenerator(Field field, CreatorFunction creatorFunction) {
-        userCreatorByField.put(field, creatorFunction);
+    private Object getFkObject(Class<?> type) {
+        return entityMap.getLast(entity -> entity.getClass().isAssignableFrom(type))
+                .orElseThrow(() -> new IllegalArgumentException("FK object has not been created yet"));
     }
 
+    public void addValueGenerator(Class<?> type, TypeValue<?> generator) {
+        typeValueMap.add(type, generator);
+    }
 
-    public boolean containsInFieldsMapping(Class<?> type) {
-        return fieldsMapping.containsKey(type);
+    public void addValueGenerator(Field field, FieldValueCreator fieldValueCreator) {
+        userCreatorByField.put(field, fieldValueCreator);
+    }
+
+    public boolean supportsType(Class<?> type) {
+        return typeValueMap.contains(type);
     }
 
     public boolean containsInUserCreatorByField(Field field) {
@@ -102,19 +89,9 @@ public class FieldCreatorManager {
     }
 
     private Optional<Column> getFromProperties(Field field) {
-        if (existInProperties(field)) {
-            return Optional.ofNullable(piftProperties.getTables().get(ReflectionUtils.getTableName(field))
-                    .getColumns().get(SQLUtils.getColumnName(field)));
-        }
-        return Optional.empty();
+        String tableName = ReflectionUtils.getTableName(field);
+        String columnName = ReflectionUtils.getColumnName(field);
+        return piftManager.getColumn(tableName, columnName);
     }
 
-    public boolean existInProperties(Field field) {
-        String tableName = ReflectionUtils.getTableName(field);
-        String columnName = SQLUtils.getColumnName(field);
-        return piftProperties.getTables().containsKey(tableName)
-                && (piftProperties.getTables().get(tableName)
-                .getColumns().containsKey(columnName)
-                || piftProperties.getTables().get(tableName).getForeignKeys().containsKey(columnName));
-    }
 }
