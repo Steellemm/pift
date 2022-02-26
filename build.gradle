@@ -1,9 +1,10 @@
 plugins {
     id 'java'
+    id 'maven-publish'
 }
 
-group 'org.example'
-version '1.0-SNAPSHOT'
+group 'com.griddynamics.pift'
+version '0.1'
 
 repositories {
     mavenCentral()
@@ -33,4 +34,32 @@ dependencies {
 
 test {
     useJUnitPlatform()
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            groupId = 'com.griddynamics.pift'
+            artifactId = 'pift-core'
+            version '0.1'
+            from components.java
+            pom {
+                name = 'PIFT'
+                description = 'Library for testing applications with relational database'
+                url = 'https://github.com/Steellemm/pift'
+                developers {
+                    developer {
+                        id = 'steellemm'
+                        name = 'Dmitiy Koziulin'
+                        email = 'invoo@bk.ru'
+                    }
+                }
+                scm {
+                    connection = 'scm:git:git://github.com:Steellemm/pift.git'
+                    developerConnection = 'scm:git:ssh://github.com:Steellemm/pift.git'
+                    url = 'https://github.com/Steellemm/pift'
+                }
+            }
+        }
+    }
 }
