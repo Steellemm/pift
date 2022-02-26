@@ -6,5 +6,6 @@ import java.util.Map;
 
 @Data
 public class PiftProperties {
+    private Template template;
     private Map<String, Table> tables;
 }

@@ -8,11 +8,6 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class PiftManagerTest {
 
-    @Test
-    void getPropertiesTest() {
-        assertDoesNotThrow(PiftManager::getProperties);
-        PiftProperties properties = PiftManager.getProperties();
-        assertNotNull(properties);
-    }
+
 
 }

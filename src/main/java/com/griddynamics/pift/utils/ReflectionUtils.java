@@ -4,13 +4,21 @@ package com.griddynamics.pift.utils;
 import lombok.experimental.UtilityClass;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.reflections.Reflections;
+import org.reflections.scanners.Scanners;
+import org.reflections.scanners.SubTypesScanner;
 
 import javax.persistence.*;
 import java.lang.reflect.Field;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.reflections.scanners.Scanners.SubTypes;
+import static org.reflections.scanners.Scanners.TypesAnnotated;
 
 @UtilityClass
 public class ReflectionUtils {
@@ -120,16 +128,21 @@ public class ReflectionUtils {
         }
     }
 
-    public static <T> Object getEntityWithId(Class<T> type, Object id) {
-        Object obj = ReflectionUtils.createInstance(type);
+    public static <T> T createEntityWithId(Class<T> type, Object id) {
+        checkOnTable(type);
+        T obj = ReflectionUtils.createInstance(type);
         ReflectionUtils.setFieldValue(obj, getIdField(type), id);
         return obj;
     }
 
     public static void checkOnTable(Class<?> type) {
-        if (!type.isAnnotationPresent(Table.class)) {
+        if (!isTable(type)) {
             throw new IllegalArgumentException("POJO is not reflection of table: " + type.getCanonicalName());
         }
+    }
+
+    public static boolean isTable(Class<?> type) {
+        return type.isAnnotationPresent(Table.class);
     }
 
     public static void setIdField(Object entity, Object id) {
@@ -146,6 +159,13 @@ public class ReflectionUtils {
 
     public static Object getIdValue(Object entity) {
         return getFieldValue(getIdField(entity.getClass()), entity);
+    }
+
+    public static Map<String, Class<?>> getEntityMap(Collection<String> packages) {
+        return packages.stream()
+                .flatMap(packageName -> new Reflections(packageName, SubTypes.filterResultsBy(s -> true)).getSubTypesOf(Object.class).stream())
+                .filter(ReflectionUtils::isTable)
+                .collect(Collectors.toMap(ReflectionUtils::getTableName, Function.identity()));
     }
 
     public static <T> Stream<T> getClassHeirs(Class<T> parent, String packet) {

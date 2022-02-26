@@ -1,21 +1,17 @@
 package com.griddynamics.pift;
 
-import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.griddynamics.pift.model.Column;
 import com.griddynamics.pift.model.ForeignKey;
 import com.griddynamics.pift.model.PiftProperties;
+import com.griddynamics.pift.utils.JsonUtils;
 import lombok.extern.slf4j.Slf4j;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.Optional;
 
 @Slf4j
 public class PiftManager {
-
-    private static final ObjectMapper MAPPER = new ObjectMapper(new YAMLFactory());
 
     private static final PiftManager INSTANCE = new PiftManager();
     private final PiftProperties piftProperties;
@@ -23,7 +19,7 @@ public class PiftManager {
     private PiftManager() {
         PiftProperties props = null;
         try {
-            props = PiftManager.getProperties();
+            props = JsonUtils.getProperties();
             log.info("Properties file has been successfully read");
         } catch (Exception e) {
             log.warn("Problems with properties file", e);
@@ -59,18 +55,6 @@ public class PiftManager {
                 && (piftProperties.getTables().get(table)
                 .getColumns().containsKey(column)
                 || piftProperties.getTables().get(table).getForeignKeys().containsKey(column));
-    }
-
-    public static PiftProperties getProperties() {
-        try(JsonParser jsonParser = MAPPER.createParser(getYaml())) {
-            return jsonParser.readValueAs(PiftProperties.class);
-        } catch (IOException e) {
-            throw new IllegalStateException("Exception during file reading", e);
-        }
-    }
-
-    private static InputStream getYaml(){
-        return PiftManager.class.getResourceAsStream("/pift.yaml");
     }
 
     public static PiftManager getInstance() {

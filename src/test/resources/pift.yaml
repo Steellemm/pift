@@ -1,3 +1,6 @@
+template:
+  path: json
+
 tables:
   entity:
     foreign-keys:

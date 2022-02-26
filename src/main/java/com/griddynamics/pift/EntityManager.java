@@ -1,9 +1,12 @@
 package com.griddynamics.pift;
 
+import com.griddynamics.pift.utils.JsonUtils;
 import com.griddynamics.pift.utils.ReflectionUtils;
 import com.griddynamics.pift.utils.SQLUtils;
-import lombok.RequiredArgsConstructor;
+import com.griddynamics.pift.utils.TemplateUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.json.JSONException;
+import org.skyscreamer.jsonassert.JSONAssert;
 
 import java.lang.reflect.Field;
 import java.sql.Connection;
@@ -14,13 +17,24 @@ import java.util.*;
 
 
 @Slf4j
-@RequiredArgsConstructor
 public class EntityManager {
     private final String url;
     private final String user;
     private final String password;
+    private final Map<String, Class<?>> userEntityByName;
     private final EntityMap entityMap = new EntityMap();
     private final FieldCreatorManager fieldCreatorManager = new FieldCreatorManager(entityMap);
+
+    private EntityManager(String url, String user, String password, Map<String, Class<?>> userEntityByName) {
+        this.url = url;
+        this.user = user;
+        this.password = password;
+        this.userEntityByName = userEntityByName;
+    }
+
+    public static EntityManagerBuilder builder() {
+        return new EntityManagerBuilder();
+    }
 
     /**
      * Pushes all objects into database
@@ -49,9 +63,23 @@ public class EntityManager {
 
     public <T> Optional<T> getById(Class<T> type, Object id) {
         ReflectionUtils.checkOnTable(type);
-        T instance = ReflectionUtils.createInstance(type);
-        ReflectionUtils.setIdField(instance, id);
+        T instance = ReflectionUtils.createEntityWithId(type, id);
         return getList(instance).stream().findFirst();
+    }
+
+    public Object create(String tableName) {
+        return create(tableName, "");
+    }
+
+    public Object create(String tableName, String entityId) {
+        return create(tableName, Collections.emptyMap(), entityId);
+    }
+
+    public Object create(String tableName, Map<String, String> values, String entityId) {
+        if (!userEntityByName.containsKey(tableName)) {
+            throw new IllegalArgumentException("Entity with passed table name does not exist: " + tableName);
+        }
+        return create(userEntityByName.get(tableName), values, entityId);
     }
 
     public <T> T create(Class<T> type) {
@@ -75,7 +103,8 @@ public class EntityManager {
      * Creates new instance of type class with random values in fields.
      */
     public String createAndGetName(Class<?> type, Map<String, String> values, String entityId) {
-        Object object = createFilledObject(type);
+        Object object = ReflectionUtils.createInstance(type);
+        setFields(object, values);
         if (entityId == null || entityId.isEmpty()) {
             return entityMap.add(object);
         } else {
@@ -86,19 +115,6 @@ public class EntityManager {
     public <T> T update(T entity, Map<String, String> fieldValues) {
         setFields(entity, fieldValues);
         return entity;
-    }
-
-    /**
-     * Creates new instance of type parameter and add it in createdEntitiesList.
-     */
-    private <T> T createFilledObject(Class<T> type) {
-        try {
-            T object = ReflectionUtils.createInstance(type);
-            setFields(object);
-            return object;
-        } catch (Exception e) {
-            throw new IllegalArgumentException("Exception in create method", e);
-        }
     }
 
     /**
@@ -159,12 +175,55 @@ public class EntityManager {
             if (fieldCreatorManager.supportsType(type)) {
                 return resultSet.getObject(columnName, type);
             }
-            ReflectionUtils.checkOnTable(type);
-            Object foreignEntity = ReflectionUtils.createInstance(type);
-            ReflectionUtils.setIdField(foreignEntity, resultSet.getObject(columnName));
-            return foreignEntity;
+            return ReflectionUtils.createEntityWithId(type, resultSet.getObject(columnName));
         } catch (Exception e) {
             throw new IllegalStateException("Exception in setField method", e);
         }
     }
+
+    public void assertJsonEquals(String fileName, Object json) {
+        assertJsonEquals(fileName, JsonUtils.objectToJson(json));
+    }
+
+    public void assertJsonEquals(String fileName, String json) {
+        try {
+            JSONAssert.assertEquals(TemplateUtils.getJsonAsString(JsonUtils.getJsonInputStream(fileName), entityMap.getEntityMap()), json, false);
+        } catch (JSONException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    public static class EntityManagerBuilder {
+
+        private String url;
+        private String user;
+        private String password;
+        private final Set<String> entityPackages = new HashSet<>();
+
+        public EntityManagerBuilder setUrl(String url) {
+            this.url = url;
+            return this;
+        }
+
+        public EntityManagerBuilder setUser(String user) {
+            this.user = user;
+            return this;
+        }
+
+        public EntityManagerBuilder setPassword(String password) {
+            this.password = password;
+            return this;
+        }
+
+        public EntityManagerBuilder addEntityPackage(String ... entityPackages) {
+            this.entityPackages.addAll(Arrays.asList(entityPackages));
+            return this;
+        }
+
+        public EntityManager build() {
+            return new EntityManager(url, user, password, ReflectionUtils.getEntityMap(entityPackages));
+        }
+
+    }
+
 }

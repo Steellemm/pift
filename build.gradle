@@ -12,6 +12,14 @@ repositories {
 dependencies {
     implementation 'com.github.javafaker:javafaker:1.0.2'
     implementation 'org.projectlombok:lombok:1.18.22'
+    implementation 'org.slf4j:slf4j-api:1.7.36'
+    implementation 'org.postgresql:postgresql:42.3.2'
+    implementation 'javax.persistence:javax.persistence-api:2.2'
+    implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.13.1'
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.13.1'
+    implementation 'org.reflections:reflections:0.10.2'
+    implementation 'com.github.krraghavan:xeger:1.0.0-RELEASE'
+    implementation 'org.skyscreamer:jsonassert:1.5.0'
     annotationProcessor 'org.projectlombok:lombok:1.18.22'
     testAnnotationProcessor 'org.projectlombok:lombok:1.18.22'
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'
@@ -19,13 +27,6 @@ dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter-params:5.8.2'
     testImplementation 'org.junit.platform:junit-platform-suite:1.8.2'
     testImplementation 'ch.qos.logback:logback-classic:1.2.10'
-    implementation 'org.slf4j:slf4j-api:1.7.32'
-    implementation 'org.postgresql:postgresql:42.3.1'
-    implementation 'javax.persistence:javax.persistence-api:2.2'
-    implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.13.1'
-    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.13.1'
-    implementation 'org.reflections:reflections:0.10.2'
-    implementation 'com.github.krraghavan:xeger:1.0.0-RELEASE'
     testImplementation 'com.h2database:h2:2.1.210'
 
 }

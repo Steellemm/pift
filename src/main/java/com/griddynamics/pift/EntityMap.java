@@ -34,6 +34,10 @@ public class EntityMap {
         return Optional.ofNullable(appropriateEntity);
     }
 
+    public LinkedHashMap<String, Object> getEntityMap() {
+        return createdEntitiesMap;
+    }
+
     public Stream<Object> getNotFlushedEntities() {
         return notFlushedEntityIds.stream().map(createdEntitiesMap::get);
     }
