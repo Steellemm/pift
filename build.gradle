@@ -4,7 +4,7 @@ plugins {
 }
 
 group 'com.griddynamics.pift'
-version '0.0.1'
+version '0.0.2'
 sourceCompatibility = '8'
 
 repositories {
@@ -66,11 +66,10 @@ publishing {
     repositories {
         maven {
             credentials {
-                username = "kozulmator@gmail.com"
-                password = "4f83KgsF6spzHjQ"
+                username = mavenUsername
+                password = mavenPassword
             }
-
-            url = "https://steellemm.jfrog.io/artifactory/default-maven-local/"
+            url = mavenUrl
         }
     }
 }
