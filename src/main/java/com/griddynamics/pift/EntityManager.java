@@ -1,12 +1,8 @@
 package com.griddynamics.pift;
 
-import com.griddynamics.pift.utils.JsonUtils;
 import com.griddynamics.pift.utils.ReflectionUtils;
 import com.griddynamics.pift.utils.SQLUtils;
-import com.griddynamics.pift.utils.TemplateUtils;
 import lombok.extern.slf4j.Slf4j;
-import org.json.JSONException;
-import org.skyscreamer.jsonassert.JSONAssert;
 
 import java.lang.reflect.Field;
 import java.sql.Connection;
@@ -178,18 +174,6 @@ public class EntityManager {
             return ReflectionUtils.createEntityWithId(type, resultSet.getObject(columnName));
         } catch (Exception e) {
             throw new IllegalStateException("Exception in setField method", e);
-        }
-    }
-
-    public void assertJsonEquals(String fileName, Object json) {
-        assertJsonEquals(fileName, JsonUtils.objectToJson(json));
-    }
-
-    public void assertJsonEquals(String fileName, String json) {
-        try {
-            JSONAssert.assertEquals(TemplateUtils.getJsonAsString(JsonUtils.getJsonInputStream(fileName), entityMap.getEntityMap()), json, false);
-        } catch (JSONException e) {
-            throw new IllegalStateException(e);
         }
     }
 

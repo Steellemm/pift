@@ -1,6 +1,5 @@
 package com.griddynamics.pift.utils;
 
-import com.griddynamics.pift.PiftManager;
 import com.griddynamics.pift.model.PiftProperties;
 import org.junit.jupiter.api.Test;
 

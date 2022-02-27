@@ -4,7 +4,8 @@ plugins {
 }
 
 group 'com.griddynamics.pift'
-version '0.1'
+version '0.0.1'
+sourceCompatibility = '8'
 
 repositories {
     mavenCentral()
@@ -41,7 +42,7 @@ publishing {
         mavenJava(MavenPublication) {
             groupId = 'com.griddynamics.pift'
             artifactId = 'pift-core'
-            version '0.1'
+            version version
             from components.java
             pom {
                 name = 'PIFT'
@@ -60,6 +61,16 @@ publishing {
                     url = 'https://github.com/Steellemm/pift'
                 }
             }
+        }
+    }
+    repositories {
+        maven {
+            credentials {
+                username = "kozulmator@gmail.com"
+                password = "4f83KgsF6spzHjQ"
+            }
+
+            url = "https://steellemm.jfrog.io/artifactory/default-maven-local/"
         }
     }
 }

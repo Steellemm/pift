@@ -8,6 +8,7 @@ import com.griddynamics.pift.model.PiftProperties;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Path;
 
 public class JsonUtils {
 
@@ -32,6 +33,10 @@ public class JsonUtils {
         } catch (JsonProcessingException e) {
             throw new IllegalStateException(e);
         }
+    }
+
+    public static InputStream getJsonInputStream(Path path){
+        return getJsonInputStream("/" + path.toString());
     }
 
     public static InputStream getJsonInputStream(String path){

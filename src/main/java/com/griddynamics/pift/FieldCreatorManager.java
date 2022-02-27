@@ -6,7 +6,6 @@ import com.griddynamics.pift.model.Column;
 import com.griddynamics.pift.model.ForeignKey;
 import com.griddynamics.pift.types.TypeValueMap;
 import com.griddynamics.pift.utils.ReflectionUtils;
-import com.griddynamics.pift.utils.SQLUtils;
 import lombok.extern.slf4j.Slf4j;
 
 import java.lang.reflect.Field;
@@ -18,7 +17,7 @@ import java.util.Optional;
 public class FieldCreatorManager {
 
     private final Map<Field, FieldValueCreator> userCreatorByField = new HashMap<>();
-    private final PiftManager piftManager = PiftManager.getInstance();
+    private final PiftPropertiesManager piftPropertiesManager = new PiftPropertiesManager();
     private final TypeValueMap typeValueMap = TypeValueMap.getInstance();
     private final EntityMap entityMap;
 
@@ -47,7 +46,7 @@ public class FieldCreatorManager {
     public Optional<ForeignKey> getForeignKey(Field field) {
         String tableName = ReflectionUtils.getTableName(field);
         String columnName = ReflectionUtils.getColumnName(field);
-        return piftManager.getForeignKey(tableName, columnName);
+        return piftPropertiesManager.getForeignKey(tableName, columnName);
     }
 
     public Object getFieldValue(Field field) {
@@ -91,7 +90,7 @@ public class FieldCreatorManager {
     private Optional<Column> getFromProperties(Field field) {
         String tableName = ReflectionUtils.getTableName(field);
         String columnName = ReflectionUtils.getColumnName(field);
-        return piftManager.getColumn(tableName, columnName);
+        return piftPropertiesManager.getColumn(tableName, columnName);
     }
 
 }

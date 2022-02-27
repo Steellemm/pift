@@ -1,22 +1,21 @@
 package com.griddynamics.pift;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.griddynamics.pift.model.Column;
 import com.griddynamics.pift.model.ForeignKey;
 import com.griddynamics.pift.model.PiftProperties;
 import com.griddynamics.pift.utils.JsonUtils;
 import lombok.extern.slf4j.Slf4j;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Optional;
 
 @Slf4j
-public class PiftManager {
+public class PiftPropertiesManager {
 
-    private static final PiftManager INSTANCE = new PiftManager();
     private final PiftProperties piftProperties;
 
-    private PiftManager() {
+    public PiftPropertiesManager() {
         PiftProperties props = null;
         try {
             props = JsonUtils.getProperties();
@@ -57,7 +56,11 @@ public class PiftManager {
                 || piftProperties.getTables().get(table).getForeignKeys().containsKey(column));
     }
 
-    public static PiftManager getInstance() {
-        return INSTANCE;
+    public Path getPathToTemplate(String fileName) {
+        if (fileName.contains("/")) {
+            throw new IllegalArgumentException("Invalid filename: " + fileName);
+        }
+        String fileNameWithExt = fileName.contains(".")? fileName : fileName + ".jsont";
+        return Paths.get(piftProperties.getTemplate().getPath(), fileNameWithExt);
     }
 }
