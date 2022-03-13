@@ -184,17 +184,17 @@ public class EntityManager {
         private String password;
         private final Set<String> entityPackages = new HashSet<>();
 
-        public EntityManagerBuilder setUrl(String url) {
+        public EntityManagerBuilder url(String url) {
             this.url = url;
             return this;
         }
 
-        public EntityManagerBuilder setUser(String user) {
+        public EntityManagerBuilder user(String user) {
             this.user = user;
             return this;
         }
 
-        public EntityManagerBuilder setPassword(String password) {
+        public EntityManagerBuilder password(String password) {
             this.password = password;
             return this;
         }

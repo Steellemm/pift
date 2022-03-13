@@ -4,7 +4,7 @@ plugins {
 }
 
 group 'com.griddynamics.pift'
-version '0.0.2'
+version '0.0.4'
 sourceCompatibility = '8'
 
 repositories {

@@ -16,9 +16,9 @@ import java.util.Map;
 class EntityManagerTest {
 
     private final EntityManager entityManager = EntityManager.builder()
-            .setUrl("")
-            .setPassword("")
-            .setUser("")
+            .url("")
+            .password("")
+            .user("")
             .addEntityPackage("com.griddynamics.pift.entities")
             .build();
 

@@ -16,9 +16,9 @@ import java.util.List;
 public class IntegrationTest {
 
     private final EntityManager entityManager = EntityManager.builder()
-            .setUrl("jdbc:h2:mem:myDb;DB_CLOSE_DELAY=-1")
-            .setPassword("")
-            .setUser("")
+            .url("jdbc:h2:mem:myDb;DB_CLOSE_DELAY=-1")
+            .password("")
+            .user("")
             .build();
 
     @BeforeAll
