@@ -5,15 +5,36 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.griddynamics.pift.model.PiftProperties;
+import org.skyscreamer.jsonassert.JSONAssert;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
+import java.util.Map;
 
 public class JsonUtils {
 
     private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
     private static final ObjectMapper YAML_MAPPER = new ObjectMapper(new YAMLFactory());
+
+    public static void assertJson(String filePath, Object actualObject, Map<String, Object> params) {
+        String actualJson;
+        try {
+            actualJson = JSON_MAPPER.writeValueAsString(actualObject);
+        } catch (Exception e) {
+            throw new IllegalStateException("Error during compare", e);
+        }
+        assertJson(filePath, actualJson, params);
+    }
+
+    public static void assertJson(String filePath, String actualJson, Map<String, Object> params) {
+        try {
+            String expectedJson = TemplateUtils.getJsonAsString(getJsonFile(filePath), params);
+            JSONAssert.assertEquals(expectedJson, actualJson, false);
+        } catch (Exception e) {
+            throw new IllegalStateException("Error during compare", e);
+        }
+    }
 
     public static String getJsonAsString(String fileName) {
         try(JsonParser jsonParser = JSON_MAPPER.createParser(getJsonInputStream(fileName))) {

@@ -30,7 +30,7 @@ dependencies {
     testImplementation 'org.junit.platform:junit-platform-suite:1.8.2'
     testImplementation 'ch.qos.logback:logback-classic:1.2.10'
     testImplementation 'com.h2database:h2:2.1.210'
-
+    testImplementation 'com.github.tomakehurst:wiremock:1.58'
 }
 
 test {

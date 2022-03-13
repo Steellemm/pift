@@ -6,6 +6,7 @@ import java.io.BufferedInputStream;
 import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -17,7 +18,7 @@ public class TemplateUtils {
 
     private static final int quote = '"';
     private static final int point = '.';
-    private static final Set<String> SYSTEM_WORDS = Set.of("true", "false", "null");
+    private static final Set<String> SYSTEM_WORDS = new HashSet<>(Arrays.asList("true", "false", "null"));
 
     /**
      * Returns the request URL.
