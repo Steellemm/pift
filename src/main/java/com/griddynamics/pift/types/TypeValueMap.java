@@ -9,7 +9,7 @@ import java.util.stream.Collectors;
 
 public class TypeValueMap {
 
-    private final static TypeValueMap INSTANCE = new TypeValueMap();
+    private static TypeValueMap INSTANCE;
 
     /**
      * Map for autogenerate random values,
@@ -24,7 +24,16 @@ public class TypeValueMap {
     }
 
     public static TypeValueMap getInstance() {
-        return INSTANCE;
+        TypeValueMap localInstance = INSTANCE;
+        if (localInstance == null) {
+            synchronized (TypeValueMap.class) {
+                localInstance = INSTANCE;
+                if (localInstance == null) {
+                    INSTANCE = localInstance = new TypeValueMap();
+                }
+            }
+        }
+        return localInstance;
     }
 
     public <T> TypeValue<T> get(Class<T> type) {
@@ -32,6 +41,10 @@ public class TypeValueMap {
             throw new IllegalArgumentException("Unidentified type: " + type);
         }
         return (TypeValue<T>) fieldValueByType.get(type);
+    }
+
+    public String toString(Object value) {
+        return get(value.getClass()).toString(value);
     }
 
     public void add(Class<?> type, TypeValue<?> generator) {

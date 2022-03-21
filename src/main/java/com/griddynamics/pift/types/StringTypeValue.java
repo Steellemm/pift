@@ -35,4 +35,9 @@ public class StringTypeValue implements TypeValue<String> {
     public String parse(String value) {
         return value;
     }
+
+    @Override
+    public String toString(Object value) {
+        return "'" + value.toString() + "'";
+    }
 }

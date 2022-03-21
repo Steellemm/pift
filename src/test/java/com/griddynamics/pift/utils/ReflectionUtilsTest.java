@@ -1,11 +1,16 @@
 package com.griddynamics.pift.utils;
 
+import com.griddynamics.pift.entities.CKEntity;
+import com.griddynamics.pift.entities.CompositeKey;
 import com.griddynamics.pift.entities.Department;
 import com.griddynamics.pift.utils.ReflectionUtils;
 import org.junit.jupiter.api.*;
 
 import java.lang.reflect.Field;
 import java.util.Arrays;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 class ReflectionUtilsTest {
     TestClass testClass = new TestClass("text");
@@ -16,8 +21,37 @@ class ReflectionUtilsTest {
     }
 
     @Test
+    void createEntityWithId() {
+        CompositeKey compositeKey = new CompositeKey();
+        compositeKey.setName("name");
+        compositeKey.setDepartmentId(123L);
+        CKEntity entityWithId = ReflectionUtils.createEntityWithId(CKEntity.class, compositeKey);
+        Assertions.assertEquals(123L, entityWithId.getId().getDepartmentId());
+        Assertions.assertEquals("name", entityWithId.getId().getName());
+        Assertions.assertNull(entityWithId.getInfo());
+    }
+
+    @Test
+    void getValuesByColumnName() {
+        CompositeKey compositeKey = new CompositeKey();
+        compositeKey.setName("name");
+        compositeKey.setDepartmentId(123L);
+        CKEntity entityWithId = ReflectionUtils.createEntityWithId(CKEntity.class, compositeKey);
+        entityWithId.setInfo("info");
+        Map<String, String> valuesByColumnName = ReflectionUtils.getValuesByColumnName(entityWithId);
+        Assertions.assertEquals("123", valuesByColumnName.get("departmentId"));
+        Assertions.assertEquals("'name'", valuesByColumnName.get("name"));
+        Assertions.assertEquals("'info'", valuesByColumnName.get("info"));
+    }
+
+
+    @Test
     void getColumnFields() {
-        Assertions.assertEquals(1, ReflectionUtils.getColumnFields(testClass.getClass()).count());
+        Set<String> fieldsName = ReflectionUtils.getColumnFields(CKEntity.class)
+                .map(ReflectionUtils::getColumnName)
+                .collect(Collectors.toSet());
+        Assertions.assertEquals(2, fieldsName.size());
+        Assertions.assertTrue(fieldsName.contains("info"));
     }
 
     @Test

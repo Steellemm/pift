@@ -1,6 +1,7 @@
 package com.griddynamics.pift.utils;
 
 
+import com.griddynamics.pift.types.TypeValueMap;
 import lombok.experimental.UtilityClass;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.reflections.Reflections;
@@ -23,16 +24,7 @@ import static org.reflections.scanners.Scanners.TypesAnnotated;
 @UtilityClass
 public class ReflectionUtils {
 
-    /**
-     * Checks if received field is filled in the object.
-     *
-     * @param field  to be checked.
-     * @param object target.
-     * @return boolean
-     */
-    public static boolean checkIfFieldFilled(Field field, Object object) {
-        return getFieldValue(field, object) != null;
-    }
+    private final static TypeValueMap typeValueMap = TypeValueMap.getInstance();
 
     /**
      * Gets the table name of received class.
@@ -83,6 +75,32 @@ public class ReflectionUtils {
         } else {
             return stream;
         }
+    }
+
+    public Map<String, String> getValuesByColumnName(Object entity) {
+        return getColumnFields(entity.getClass())
+                .flatMap(field -> flatField(entity, field).entrySet().stream())
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+    }
+
+    private Map<String, String> flatField(Object entity, Field field) {
+        Object value = getFieldValue(field, entity);
+        if (value == null) {
+            return Collections.emptyMap();
+        }
+        if (typeValueMap.contains(field.getType())) {
+            return Collections.singletonMap(getColumnName(field), typeValueMap.toString(value));
+        }
+        if (field.isAnnotationPresent(EmbeddedId.class)) {
+            Object embeddedValue = getFieldValue(field, entity);
+            return getColumnFields(field.getType())
+                    .filter(f -> getFieldValue(f, embeddedValue) != null)
+                    .collect(Collectors.toMap(ReflectionUtils::getColumnName,
+                            f -> typeValueMap.toString(getFieldValue(f, embeddedValue))));
+        }
+        Field idField = getIdField(field.getType());
+        flatField(value, idField);
+        return Collections.singletonMap(getColumnName(field), typeValueMap.toString(value));
     }
 
 
@@ -152,7 +170,7 @@ public class ReflectionUtils {
 
     public static Field getIdField(Class<?> type) {
         return Arrays.stream(type.getDeclaredFields())
-                .filter(x -> x.isAnnotationPresent(Id.class))
+                .filter(x -> x.isAnnotationPresent(Id.class) || x.isAnnotationPresent(EmbeddedId.class))
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("Exception in getIdField method"));
     }

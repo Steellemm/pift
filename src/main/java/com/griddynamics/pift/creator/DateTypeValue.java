@@ -31,6 +31,11 @@ public interface DateTypeValue<T> extends TypeValue<T> {
         return generate(parseInZone(value));
     }
 
+    @Override
+    default String toString(Object value) {
+        return "'" + value.toString() + "'";
+    }
+
     T generate(ZonedDateTime dateTime);
 
     default ZonedDateTime min(Condition condition) {

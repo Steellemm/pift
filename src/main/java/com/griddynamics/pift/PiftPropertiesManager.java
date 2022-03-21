@@ -27,11 +27,7 @@ public class PiftPropertiesManager {
     }
 
     public Optional<ForeignKey> getForeignKey(String table, String column) {
-        if (piftProperties == null) {
-            return Optional.empty();
-        }
-        if (piftProperties.getTables().containsKey(table) && piftProperties.getTables().get(table)
-                .getForeignKeys().containsKey(column)) {
+        if (existForeignKey(table, column)) {
             return Optional.ofNullable(piftProperties.getTables().get(table)
                     .getForeignKeys().get(column));
         }
@@ -50,10 +46,19 @@ public class PiftPropertiesManager {
         if (piftProperties == null) {
             return false;
         }
-        return piftProperties.getTables().containsKey(table)
-                && (piftProperties.getTables().get(table)
-                .getColumns().containsKey(column)
-                || piftProperties.getTables().get(table).getForeignKeys().containsKey(column));
+        return piftProperties.getTables() != null &&
+                piftProperties.getTables().containsKey(table) &&
+                piftProperties.getTables().get(table).getColumns() != null &&
+                piftProperties.getTables().get(table).getColumns().containsKey(column);
+    }
+
+    private boolean existForeignKey(String table, String column) {
+        if (piftProperties == null) {
+            return false;
+        }
+        return piftProperties.getTables().containsKey(table) &&
+                piftProperties.getTables().get(table).getForeignKeys() != null &&
+                piftProperties.getTables().get(table).getForeignKeys().containsKey(column);
     }
 
     public Path getPathToTemplate(String fileName) {

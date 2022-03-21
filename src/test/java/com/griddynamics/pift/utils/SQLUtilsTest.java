@@ -1,32 +1,33 @@
 package com.griddynamics.pift.utils;
 
-import com.griddynamics.pift.EntityMap;
-import com.griddynamics.pift.FieldCreatorManager;
+import com.griddynamics.pift.entities.CKEntity;
+import com.griddynamics.pift.entities.CompositeKey;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 class SQLUtilsTest {
-    TestClass testClass = new TestClass("text", 10);
-    FieldCreatorManager fieldCreatorManager = new FieldCreatorManager(new EntityMap());
-
-    @Test
-    void readField() {
-        Assertions.assertEquals("10", SQLUtils.readField(testClass.getClass().getDeclaredFields()[1], testClass));
-        Assertions.assertEquals("'text'", SQLUtils.readField(testClass.getClass().getDeclaredFields()[0], testClass));
-    }
 
     @Test
     void createQueryForInsert() {
-        Assertions.assertNotNull(SQLUtils.createQueryForInsert(testClass, fieldCreatorManager));
+        CompositeKey compositeKey = new CompositeKey();
+        compositeKey.setName("name");
+        compositeKey.setDepartmentId(123L);
+        CKEntity entityWithId = new CKEntity();
+        entityWithId.setId(compositeKey);
+        entityWithId.setInfo("info");
+        Assertions.assertEquals("INSERT INTO ck_entity (departmentId, name, info) values (123, 'name', 'info')",
+                SQLUtils.insert(entityWithId));
     }
 
-    private static class TestClass{
-        String text;
-        int number;
-
-        public TestClass(String text, int number) {
-            this.text = text;
-            this.number = number;
-        }
+    @Test
+    void createQueryForSelect() {
+        CompositeKey compositeKey = new CompositeKey();
+        compositeKey.setName("name");
+        compositeKey.setDepartmentId(123L);
+        CKEntity entityWithId = new CKEntity();
+        entityWithId.setId(compositeKey);
+        entityWithId.setInfo("info");
+        Assertions.assertEquals("SELECT * FROM ck_entity WHERE departmentId = 123 AND name = 'name' AND info = 'info'",
+                SQLUtils.select(entityWithId));
     }
 }

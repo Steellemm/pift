@@ -43,7 +43,7 @@ public class EntityManager {
     public <T> List<T> getList(T entity) {
         Class<T> type = (Class<T>) entity.getClass();
         ReflectionUtils.checkOnTable(type);
-        String queryForSelect = SQLUtils.createQueryForSelect(entity);
+        String queryForSelect = SQLUtils.select(entity);
         List<T> entityList = new ArrayList<>();
         try (Connection con = DriverManager.getConnection(url, user, password);
              Statement stmt = con.createStatement();
@@ -58,7 +58,6 @@ public class EntityManager {
     }
 
     public <T> Optional<T> getById(Class<T> type, Object id) {
-        ReflectionUtils.checkOnTable(type);
         T instance = ReflectionUtils.createEntityWithId(type, id);
         return getList(instance).stream().findFirst();
     }
@@ -144,7 +143,7 @@ public class EntityManager {
      * Saves received object to the database.
      */
     private void saveEntity(Object entity) {
-        executeQuery(SQLUtils.createQueryForInsert(entity, fieldCreatorManager));
+        executeQuery(SQLUtils.insert(entity));
     }
 
     private void executeQuery(String query) {

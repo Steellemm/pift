@@ -14,4 +14,7 @@ public interface TypeValue<T> {
 
     T parse(String value);
 
+    default String toString(Object value) {
+        return value.toString();
+    }
 }
