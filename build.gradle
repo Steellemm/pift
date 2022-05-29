@@ -63,13 +63,5 @@ publishing {
             }
         }
     }
-    repositories {
-        maven {
-            credentials {
-                username = mavenUsername
-                password = mavenPassword
-            }
-            url = mavenUrl
-        }
-    }
+
 }
